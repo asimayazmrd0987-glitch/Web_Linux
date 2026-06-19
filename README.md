@@ -3,7 +3,7 @@ A web-based Ubuntu Linux environment accessible directly from your browser.
 https://ubuntu.com
 LICENSE
 https://github.com/asimayazmrd0987-glitch/Web_Linux
-📸 Preview
+📸  Preview
 plain
 ┌─────────────────────────────────────────────┐
 │  🐧 WebUbuntu — Terminal in Your Browser    │

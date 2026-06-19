@@ -16,16 +16,34 @@ A browser-based Ubuntu-like desktop environment implemented as a **React + TypeS
 - Tailwind CSS
 - Lucide React (icons)
 
-## Run locally
-From the repo root:
+## Run locally (for an individual)
+
+### Option A: Development mode (recommended)
+1. Open a terminal in this repository root.
+2. Go to the web app folder and install dependencies:
 
 ```bash
 cd "Web_Based_Ubuntu Linux/app"
 npm install
+```
+
+3. Start the development server:
+
+```bash
 npm run dev
 ```
 
-Open the URL printed by Vite (usually http://localhost:5173).
+4. Open the URL printed by Vite in your browser (usually http://localhost:5173).
+
+### Option B: Production build
+```bash
+cd "Web_Based_Ubuntu Linux/app"
+npm install
+npm run build
+```
+
+The built site will be generated in `Web_Based_Ubuntu Linux/app/dist/`.
+
 
 ## Key shortcuts
 From `Web_Based_Ubuntu Linux/app/src/App.tsx`:

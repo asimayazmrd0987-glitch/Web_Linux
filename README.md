@@ -1,5 +1,5 @@
 🐧 WebUbuntu
-A web-based Ubuntu Linux environment accessible directly from your browser.
+A Web-Based Ubuntu Linux environment accessible directly from your browser.
 https://ubuntu.com
 LICENSE
 https://github.com/asimayazmrd0987-glitch/Web_Linux

@@ -2,7 +2,7 @@
 
 A browser-based Ubuntu-like desktop environment implemented as a **React + TypeScript + Vite** single-page app.
 
-> Note: This repository provides the **web desktop UI** (window manager, dock, launcher, and apps). It is not the Docker/xterm.js server architecture shown in the old README.
+> Note: This repository provides the **web desktop UI** (window manager, dock, launcher, and apps).
 
 ## Features
 - Ubuntu-style desktop shell: wallpaper, icons, dock, top panel

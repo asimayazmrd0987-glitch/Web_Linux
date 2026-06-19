@@ -1,82 +1,36 @@
-# Web Ubuntu (React Web Desktop)
-# Link: https://web-linux-delta.vercel.app/
-
-A browser-based Ubuntu-like desktop environment implemented as a **React + TypeScript + Vite** single-page app.
-
-> Note: This repository provides the **web desktop UI** (window manager, dock, launcher, and apps).
-
-## Features
-- Ubuntu-style desktop shell: wallpaper, icons, dock, top panel
-- Window manager: open/close/minimize/focus, drag handling, Alt+Tab switcher
-- Built-in apps (implemented under `Web_Based_Ubuntu Linux/app/src/apps/*`)
-- In-browser “Terminal” with bash-like commands backed by a simulated in-app filesystem
-
-## Tech Stack
-- React + TypeScript
-- Vite
-- Tailwind CSS
-- Lucide React (icons)
-
-## Run locally (for an individual)
-
-### Option A: Development mode (recommended)
-1. Open a terminal in this repository root.
-2. Go to the web app folder and install dependencies:
-
-```bash
-cd "Web_Based_Ubuntu Linux/app"
+WebUbuntu — A Full Ubuntu Desktop in Your Browser
+WebUbuntu is a fully functional, browser-based Ubuntu-style desktop environment built from scratch with React + TypeScript + Vite. It replicates the look and feel of a real Linux desktop — complete with a window manager, dock, app launcher, terminal, file manager, and 30+ built-in applications — all running entirely client-side with no backend required.
+What Makes It Unique
+Unlike mockup UIs or simple component demos, WebUbuntu is a real working desktop:
+Window Manager — Drag, resize, minimize, maximize, and Alt+Tab between windows
+Simulated Filesystem — A full in-memory file tree with directories, files, permissions, and path navigation
+Working Terminal — Bash-like shell with cd, ls, mkdir, cat, pwd, clear, and more
+File Manager — Browse folders, create files/folders, rename, and navigate breadcrumbs
+30+ Apps — From productivity tools (Calendar, Notes, Spreadsheet) to games (Snake, Tetris, Chess, 2048) to dev utilities (Code Editor, JSON Formatter, Git Client)
+Live Demo
+🔗 web-linux-delta.vercel.app
+Tech Stack
+Table
+Layer	Technology
+Framework	React 19 + TypeScript
+Build Tool	Vite
+Styling	Tailwind CSS
+Icons	Lucide React
+State Management	Custom Zustand-like store
+Deployment	Vercel
+Keyboard Shortcuts
+Table
+Shortcut	Action
+Super (Windows/Meta)	Toggle App Launcher
+Ctrl + Alt + T	Open Terminal
+Super + D	Minimize All Windows
+Alt + Tab	Switch Windows
+Why I Built This
+I wanted to understand how desktop environments work under the hood — window management, event handling, filesystem abstractions, and UI state management — by building one myself. This project started as a learning exercise and grew into a fully interactive web desktop that anyone can try instantly.
+Run Locally
+bash
+cd Web_Based_Ubuntu_Linux/app
 npm install
-```
-
-3. Start the development server:
-
-```bash
 npm run dev
-```
-
-4. Open the URL printed by Vite in your browser (usually http://localhost:5173).
-
-### Option B: Production build
-```bash
-cd "Web_Based_Ubuntu Linux/app"
-npm install
-npm run build
-```
-
-The built site will be generated in `Web_Based_Ubuntu Linux/app/dist/`.
-
-
-## Key shortcuts
-From `Web_Based_Ubuntu Linux/app/src/App.tsx`:
-- **Super (Meta)**: toggle app launcher
-- **Ctrl + Alt + T**: open Terminal
-- **Super + D**: minimize all windows
-- **Alt + Tab**: window switching
-
-## Included apps (by category)
-These are the app entries in `Web_Based_Ubuntu Linux/app/src/apps/registry.ts`.
-
-**System**
-- File Manager, Terminal, Text Editor, Calculator, System Settings, System Monitor, Archive Manager
-
-**Productivity**
-- Calendar, Notes, Todo List, Clock, Spreadsheet, Document Viewer, Reminders, Contacts, Password Manager, Whiteboard
-
-**Internet**
-- Web Browser, Email, Chat, Weather, RSS Reader, FTP Client, Network Tools
-
-**Media**
-- Music Player, Video Player, Image Viewer, Photo Editor, Voice Recorder, Screen Recorder, Media Converter
-
-**Games**
-- Minesweeper, Snake, Tetris, Tic-Tac-Toe, 2048, Sudoku, Chess, Memory Game, Pong, Solitaire, Flappy Bird
-
-**Dev Tools**
-- Code Editor, JSON Formatter, Regex Tester, Markdown Preview, Git Client, API Tester, Base64 Tool, Color Palette
-
-**Creative**
-- Drawing, Color Picker, Image Gallery, ASCII Art
-
-## License
-MIT (see `LICENSE`).
-
+License
+MIT — feel free to fork, extend, or use as inspiration for your own projects.

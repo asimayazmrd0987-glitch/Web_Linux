@@ -13,11 +13,11 @@
 
 Unlike mockup UIs or simple component demos, **WebUbuntu** is a **real working desktop**:
 
-- 🪟 **Window Manager** — Drag, resize, minimize, maximize, and Alt+Tab between windows
-- 📁 **Simulated Filesystem** — Full in-memory file tree with directories, files, permissions, and path navigation
-- 💻 **Working Terminal** — Bash-like shell with `cd`, `ls`, `mkdir`, `cat`, `pwd`, `clear`, and more
-- 🗂️ **File Manager** — Browse folders, create files/folders, rename, and navigate breadcrumbs
-- 🎮 **30+ Built-in Apps** — From productivity tools to games to dev utilities
+- 🪟 **Window Manager**: Drag, resize, minimize, maximize, and Alt+Tab between windows
+- 📁 **Simulated Filesystem**: Full in-memory file tree with directories, files, permissions, and path navigation
+- 💻 **Working Terminal**: Bash-like shell with `cd`, `ls`, `mkdir`, `cat`, `pwd`, `clear`, and more
+- 🗂️ **File Manager**: Browse folders, create files/folders, rename, and navigate breadcrumbs
+- 🎮 **30+ Built-in Apps**: From productivity tools to games to dev utilities
 
 ---
 
@@ -25,7 +25,7 @@ Unlike mockup UIs or simple component demos, **WebUbuntu** is a **real working d
 
 **[➡️ web-linux-delta.vercel.app](https://web-linux-delta.vercel.app)**
 
-Open it in any modern browser — no installation needed.
+Open it in any modern browser, no installation needed.
 
 ---
 
@@ -33,15 +33,15 @@ Open it in any modern browser — no installation needed.
 
 ```
 ┌─────────────────────────────────────────┐
-│  🐧 WebUbuntu                    ─ □ ✕ │
+│  🐧 WebUbuntu                    ─ □ ✕  │
 ├─────────────────────────────────────────┤
-│  🖥️ Desktop                               │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐ │
-│  │Terminal │  │ File    │  │ Snake   │ │
-│  │  $ _    │  │ Manager │  │  🐍     │ │
-│  └─────────┘  └─────────┘  └─────────┘ │
-│                                           │
-│  📎 Dock: 🗂️ 💻 📝 🧮 🌐 🎵 🎮        │
+│  🖥️ Desktop                             │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  │
+│  │Terminal │  │ File    │  │ Snake   │  │
+│  │  $ _    │  │ Manager │  │  🐍     │  │
+│  └─────────┘  └─────────┘  └─────────┘  │
+│                                         │
+│  📎 Dock: 🗂️ 💻 📝 🧮 🌐 🎵 🎮         |
 └─────────────────────────────────────────┘
 ```
 
@@ -126,7 +126,7 @@ The static site will be generated in `Web_Based_Ubuntu_Linux/app/dist/`.
 
 ## 🎯 Why I Built This
 
-I wanted to understand how desktop environments work under the hood — **window management**, **event handling**, **filesystem abstractions**, and **UI state management** — by building one myself.
+I wanted to understand how desktop environments work under the hood — **window management**, **event handling**, **filesystem abstractions**, and **UI state management** by building one myself.
 
 This project started as a learning exercise and grew into a fully interactive web desktop that anyone can try instantly, with zero setup.
 

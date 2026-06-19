@@ -212,25 +212,6 @@ const WindowFrame = memo(function WindowFrame({ window: win, children }: WindowF
       }}
       onMouseDown={handleMouseDown}
     >
-      {/* Resize handles wrapper */}
-      <div
-        className="absolute inset-0 z-50"
-        style={{
-          cursor: getCursor as unknown as string,
-          pointerEvents: isDragging ? 'none' : 'auto',
-        }}
-        onMouseDown={handleResizeMouseDown}
-      >
-        <div style={{ position: 'absolute', top: 0, left: RESIZE_HANDLE, right: RESIZE_HANDLE, height: RESIZE_HANDLE, cursor: 'n-resize' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: RESIZE_HANDLE, right: RESIZE_HANDLE, height: RESIZE_HANDLE, cursor: 's-resize' }} />
-        <div style={{ position: 'absolute', left: 0, top: RESIZE_HANDLE, bottom: RESIZE_HANDLE, width: RESIZE_HANDLE, cursor: 'w-resize' }} />
-        <div style={{ position: 'absolute', right: 0, top: RESIZE_HANDLE, bottom: RESIZE_HANDLE, width: RESIZE_HANDLE, cursor: 'e-resize' }} />
-        <div style={{ position: 'absolute', top: 0, left: 0, width: RESIZE_HANDLE * 2, height: RESIZE_HANDLE * 2, cursor: 'nw-resize' }} />
-        <div style={{ position: 'absolute', top: 0, right: 0, width: RESIZE_HANDLE * 2, height: RESIZE_HANDLE * 2, cursor: 'ne-resize' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, width: RESIZE_HANDLE * 2, height: RESIZE_HANDLE * 2, cursor: 'sw-resize' }} />
-        <div style={{ position: 'absolute', bottom: 0, right: 0, width: RESIZE_HANDLE * 2, height: RESIZE_HANDLE * 2, cursor: 'se-resize' }} />
-      </div>
-
       {/* Title bar */}
       <div
         className="relative z-10 flex items-center justify-between shrink-0"
@@ -304,6 +285,63 @@ const WindowFrame = memo(function WindowFrame({ window: win, children }: WindowF
       >
         {children}
       </div>
+
+      {/* Resize handles — ONLY on edges, not full overlay */}
+      {!isMaximized && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ zIndex: 20 }}
+        >
+          {/* North */}
+          <div 
+            className="absolute top-0 left-2 right-2 h-2 pointer-events-auto"
+            style={{ cursor: 'n-resize' }}
+            onMouseDown={handleResizeMouseDown}
+          />
+          {/* South */}
+          <div 
+            className="absolute bottom-0 left-2 right-2 h-2 pointer-events-auto"
+            style={{ cursor: 's-resize' }}
+            onMouseDown={handleResizeMouseDown}
+          />
+          {/* West */}
+          <div 
+            className="absolute left-0 top-2 bottom-2 w-2 pointer-events-auto"
+            style={{ cursor: 'w-resize' }}
+            onMouseDown={handleResizeMouseDown}
+          />
+          {/* East */}
+          <div 
+            className="absolute right-0 top-2 bottom-2 w-2 pointer-events-auto"
+            style={{ cursor: 'e-resize' }}
+            onMouseDown={handleResizeMouseDown}
+          />
+          {/* NW corner */}
+          <div 
+            className="absolute top-0 left-0 w-4 h-4 pointer-events-auto"
+            style={{ cursor: 'nw-resize' }}
+            onMouseDown={handleResizeMouseDown}
+          />
+          {/* NE corner */}
+          <div 
+            className="absolute top-0 right-0 w-4 h-4 pointer-events-auto"
+            style={{ cursor: 'ne-resize' }}
+            onMouseDown={handleResizeMouseDown}
+          />
+          {/* SW corner */}
+          <div 
+            className="absolute bottom-0 left-0 w-4 h-4 pointer-events-auto"
+            style={{ cursor: 'sw-resize' }}
+            onMouseDown={handleResizeMouseDown}
+          />
+          {/* SE corner */}
+          <div 
+            className="absolute bottom-0 right-0 w-4 h-4 pointer-events-auto"
+            style={{ cursor: 'se-resize' }}
+            onMouseDown={handleResizeMouseDown}
+          />
+        </div>
+      )}
     </div>
   );
 });

@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
-import type { OSState, OSAction, Window, DesktopIcon, Notification, DockItem, WindowState } from '@/types';
+import type { OSState, OSAction, Window, DesktopIcon, Notification, DockItem, WindowState, Theme } from '@/types';
 import { APP_REGISTRY, getAppById, getDefaultDockApps } from '@/apps/registry';
 
 // ---- Helpers ----
@@ -64,17 +64,25 @@ const loadDesktopIcons = (): DesktopIcon[] => {
   return defaultDesktopIcons;
 };
 
+const loadTheme = (): Theme => {
+  try {
+    const saved = localStorage.getItem('ubuntuos_theme');
+    if (saved) return JSON.parse(saved) as Theme;
+  } catch { /* ignore */ }
+  return {
+    mode: 'dark',
+    accent: '#7C4DFF',
+    wallpaper: '/wallpaper-default.jpg',
+  };
+};
+
 const initialState: OSState = {
   bootPhase: 'off',
   auth: { isAuthenticated: false, isGuest: false, userName: 'User' },
   windows: [],
   apps: APP_REGISTRY,
   desktopIcons: loadDesktopIcons(),
-  theme: {
-    mode: 'dark',
-    accent: '#7C4DFF',
-    wallpaper: '/wallpaper-default.jpg',
-  },
+  theme: loadTheme(),
   notifications: [],
   dockItems: createInitialDockItems(),
   contextMenu: {
@@ -326,12 +334,16 @@ function osReducer(state: OSState, action: OSAction): OSState {
     }
 
     case 'SET_THEME': {
-      return { ...state, theme: { ...state.theme, ...action.theme } };
+      const newTheme = { ...state.theme, ...action.theme };
+      localStorage.setItem('ubuntuos_theme', JSON.stringify(newTheme));
+      return { ...state, theme: newTheme };
     }
 
     case 'TOGGLE_THEME': {
-      const mode = state.theme.mode === 'dark' ? 'light' : 'dark';
-      return { ...state, theme: { ...state.theme, mode } };
+      const mode: 'dark' | 'light' = state.theme.mode === 'dark' ? 'light' : 'dark';
+      const newTheme: Theme = { ...state.theme, mode };
+      localStorage.setItem('ubuntuos_theme', JSON.stringify(newTheme));
+      return { ...state, theme: newTheme };
     }
 
     case 'PIN_DOCK_ITEM': {

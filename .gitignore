@@ -1,1 +1,87 @@
-Nothing needs to be added to .gitignore since the changes only include source files (.tsx, .ts) and image files (.jpg), which should not be ignored according to the rules.
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+*.js.map
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+*.pot
+*.pyc
+*.pyo
+*~
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# Compiled and binary files
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
+*.class
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Archives
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.rar
+*.7z
+*.gz
+*.bz2
+*.xz
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar
+*.tgz

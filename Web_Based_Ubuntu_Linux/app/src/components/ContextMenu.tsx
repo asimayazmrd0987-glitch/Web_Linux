@@ -117,7 +117,7 @@ const ContextMenu = memo(function ContextMenu() {
 });
 
 function handleMenuAction(action: string, state: unknown, dispatch: React.Dispatch<import('@/types').OSAction>) {
-  const osState = state as import('@/hooks/useOSStore').OSState;
+  const osState = state as import('@/types').OSState;
   const [cmd, ...args] = action.split(':');
   switch (cmd) {
     case 'OPEN_APP': {
@@ -130,10 +130,9 @@ function handleMenuAction(action: string, state: unknown, dispatch: React.Dispat
         dispatch({
           type: 'ADD_DESKTOP_ICON',
           icon: {
-            id: `folder-${Date.now()}`,
             name: folderName,
             icon: 'Folder',
-            appId: null,
+            appId: undefined,
             position: { x: 16, y: 16 },
             isSelected: false,
           },
@@ -147,10 +146,9 @@ function handleMenuAction(action: string, state: unknown, dispatch: React.Dispat
         dispatch({
           type: 'ADD_DESKTOP_ICON',
           icon: {
-            id: `doc-${Date.now()}`,
             name: docName,
             icon: 'FileText',
-            appId: 'text-editor',
+            appId: 'texteditor',
             position: { x: 96, y: 16 },
             isSelected: false,
           },
@@ -180,7 +178,7 @@ function handleMenuAction(action: string, state: unknown, dispatch: React.Dispat
       break;
     }
     case 'QUIT_APP': {
-      if (args[0]) dispatch({ type: 'CLOSE_WINDOW', appId: args[0] });
+      if (args[0]) dispatch({ type: 'CLOSE_WINDOW', windowId: { appId: args[0] } });
       break;
     }
     case 'MINIMIZE_ALL': {
@@ -189,19 +187,22 @@ function handleMenuAction(action: string, state: unknown, dispatch: React.Dispat
     }
     case 'CUT': {
       if (osState && 'contextMenu' in osState && osState.contextMenu.contextData?.iconId) {
-        dispatch({ type: 'CUT_FILE', id: osState.contextMenu.contextData.iconId });
+        const iconId = osState.contextMenu.contextData.iconId as string;
+        dispatch({ type: 'CUT_FILE', id: iconId });
       }
       break;
     }
     case 'COPY': {
       if (osState && 'contextMenu' in osState && osState.contextMenu.contextData?.iconId) {
-        dispatch({ type: 'COPY_FILE', id: osState.contextMenu.contextData.iconId });
+        const iconId = osState.contextMenu.contextData.iconId as string;
+        dispatch({ type: 'COPY_FILE', id: iconId });
       }
       break;
     }
     case 'RENAME': {
       if (osState && 'contextMenu' in osState && osState.contextMenu.contextData?.iconId) {
-        const icon = osState.desktopIcons.find(i => i.id === osState.contextMenu.contextData?.iconId);
+        const iconId = osState.contextMenu.contextData.iconId as string;
+        const icon = osState.desktopIcons.find((i: import('@/types').DesktopIcon) => i.id === iconId);
         if (icon) {
           const newName = prompt('Rename:', icon.name);
           if (newName) {
@@ -213,7 +214,8 @@ function handleMenuAction(action: string, state: unknown, dispatch: React.Dispat
     }
     case 'TRASH': {
       if (osState && 'contextMenu' in osState && osState.contextMenu.contextData?.iconId) {
-        dispatch({ type: 'REMOVE_DESKTOP_ICON', id: osState.contextMenu.contextData.iconId });
+        const iconId = osState.contextMenu.contextData.iconId as string;
+        dispatch({ type: 'REMOVE_DESKTOP_ICON', id: iconId });
       }
       break;
     }

@@ -196,6 +196,7 @@ export interface OSState {
   nextZIndex: number;
   isAltTabbing: boolean;
   altTabIndex: number;
+  clipboard?: { type: 'cut' | 'copy'; id: string };
 }
 
 // --------------------------------------------------------
@@ -207,7 +208,7 @@ export type OSAction =
   | { type: 'LOGIN'; isGuest: boolean }
   | { type: 'LOGOUT' }
   | { type: 'OPEN_WINDOW'; appId: string; title?: string }
-  | { type: 'CLOSE_WINDOW'; windowId: string }
+  | { type: 'CLOSE_WINDOW'; windowId: string | { appId: string } }
   | { type: 'MINIMIZE_WINDOW'; windowId: string }
   | { type: 'MAXIMIZE_WINDOW'; windowId: string }
   | { type: 'RESTORE_WINDOW'; windowId: string }
@@ -226,10 +227,16 @@ export type OSAction =
   | { type: 'REMOVE_DESKTOP_ICON'; id: string }
   | { type: 'UPDATE_DESKTOP_ICON_POSITION'; id: string; position: Position }
   | { type: 'SELECT_DESKTOP_ICON'; id: string | null }
+  | { type: 'RENAME_DESKTOP_ICON'; id: string; name: string }
+  | { type: 'ARRANGE_DESKTOP_ICONS' }
+  | { type: 'CUT_FILE'; id: string }
+  | { type: 'COPY_FILE'; id: string }
   | { type: 'SET_THEME'; theme: Partial<Theme> }
   | { type: 'TOGGLE_THEME' }
   | { type: 'PIN_DOCK_ITEM'; appId: string }
   | { type: 'UNPIN_DOCK_ITEM'; appId: string }
+  | { type: 'PIN_TO_DOCK'; appId: string }
+  | { type: 'UNPIN_FROM_DOCK'; appId: string }
   | { type: 'BOUNCE_DOCK_ITEM'; appId: string }
   | { type: 'SHOW_CONTEXT_MENU'; x: number; y: number; menuType: ContextMenuType; items: ContextMenuItem[]; contextData?: Record<string, unknown> }
   | { type: 'HIDE_CONTEXT_MENU' }

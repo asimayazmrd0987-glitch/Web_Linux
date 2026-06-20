@@ -116,27 +116,105 @@ const ContextMenu = memo(function ContextMenu() {
   );
 });
 
-function handleMenuAction(action: string, _state: unknown, dispatch: React.Dispatch<import('@/types').OSAction>) {
+function handleMenuAction(action: string, state: unknown, dispatch: React.Dispatch<import('@/types').OSAction>) {
+  const osState = state as import('@/hooks/useOSStore').OSState;
   const [cmd, ...args] = action.split(':');
   switch (cmd) {
     case 'OPEN_APP': {
       if (args[0]) dispatch({ type: 'OPEN_WINDOW', appId: args[0] });
       break;
     }
-    case 'NEW_FOLDER':
-    case 'NEW_DOCUMENT':
-    case 'OPEN_TERMINAL':
+    case 'NEW_FOLDER': {
+      const folderName = prompt('Enter folder name:', 'New Folder');
+      if (folderName) {
+        dispatch({
+          type: 'ADD_DESKTOP_ICON',
+          icon: {
+            id: `folder-${Date.now()}`,
+            name: folderName,
+            icon: 'Folder',
+            appId: null,
+            position: { x: 16, y: 16 },
+            isSelected: false,
+          },
+        });
+      }
+      break;
+    }
+    case 'NEW_DOCUMENT': {
+      const docName = prompt('Enter document name:', 'New Document.txt');
+      if (docName) {
+        dispatch({
+          type: 'ADD_DESKTOP_ICON',
+          icon: {
+            id: `doc-${Date.now()}`,
+            name: docName,
+            icon: 'FileText',
+            appId: 'text-editor',
+            position: { x: 96, y: 16 },
+            isSelected: false,
+          },
+        });
+      }
+      break;
+    }
+    case 'OPEN_TERMINAL': {
+      dispatch({ type: 'OPEN_WINDOW', appId: 'terminal' });
+      break;
+    }
     case 'CHANGE_BG':
-    case 'ARRANGE_ICONS':
-    case 'SHOW_SETTINGS':
-    case 'PIN_DOCK':
-    case 'UNPIN_DOCK':
+    case 'SHOW_SETTINGS': {
+      dispatch({ type: 'OPEN_WINDOW', appId: 'settings' });
+      break;
+    }
+    case 'ARRANGE_ICONS': {
+      dispatch({ type: 'ARRANGE_DESKTOP_ICONS' });
+      break;
+    }
+    case 'PIN_DOCK': {
+      if (args[0]) dispatch({ type: 'PIN_TO_DOCK', appId: args[0] });
+      break;
+    }
+    case 'UNPIN_DOCK': {
+      if (args[0]) dispatch({ type: 'UNPIN_FROM_DOCK', appId: args[0] });
+      break;
+    }
     case 'QUIT_APP': {
-      // Placeholder: will be handled by the component that opens the menu
+      if (args[0]) dispatch({ type: 'CLOSE_WINDOW', appId: args[0] });
       break;
     }
     case 'MINIMIZE_ALL': {
       dispatch({ type: 'MINIMIZE_ALL' });
+      break;
+    }
+    case 'CUT': {
+      if (osState && 'contextMenu' in osState && osState.contextMenu.contextData?.iconId) {
+        dispatch({ type: 'CUT_FILE', id: osState.contextMenu.contextData.iconId });
+      }
+      break;
+    }
+    case 'COPY': {
+      if (osState && 'contextMenu' in osState && osState.contextMenu.contextData?.iconId) {
+        dispatch({ type: 'COPY_FILE', id: osState.contextMenu.contextData.iconId });
+      }
+      break;
+    }
+    case 'RENAME': {
+      if (osState && 'contextMenu' in osState && osState.contextMenu.contextData?.iconId) {
+        const icon = osState.desktopIcons.find(i => i.id === osState.contextMenu.contextData?.iconId);
+        if (icon) {
+          const newName = prompt('Rename:', icon.name);
+          if (newName) {
+            dispatch({ type: 'RENAME_DESKTOP_ICON', id: icon.id, name: newName });
+          }
+        }
+      }
+      break;
+    }
+    case 'TRASH': {
+      if (osState && 'contextMenu' in osState && osState.contextMenu.contextData?.iconId) {
+        dispatch({ type: 'REMOVE_DESKTOP_ICON', id: osState.contextMenu.contextData.iconId });
+      }
       break;
     }
     default:

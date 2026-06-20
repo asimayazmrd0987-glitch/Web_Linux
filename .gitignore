@@ -1,1 +1,1 @@
-Nothing should be ignored since only a TypeScript/React source file (.tsx) was modified and no build artifacts, dependencies, or temporary files are present in the changes.
+Nothing needs to be added to .gitignore since the changes only include source files (.tsx, .ts) and image files (.jpg), which should not be ignored according to the rules.

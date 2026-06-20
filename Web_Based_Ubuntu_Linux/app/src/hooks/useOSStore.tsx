@@ -141,13 +141,28 @@ function osReducer(state: OSState, action: OSAction): OSState {
     }
 
     case 'CLOSE_WINDOW': {
-      const appId = state.windows.find((w) => w.id === action.windowId)?.appId;
-      const remaining = state.windows.filter((w) => w.id !== action.windowId);
-      const hasOtherWindows = remaining.some((w) => w.appId === appId && w.state !== 'minimized');
+      // Support both windowId string and { appId: string } format
+      let targetWindowId: string | undefined;
+      let appIdToCheck: string | undefined;
+      
+      if (typeof action.windowId === 'string') {
+        targetWindowId = action.windowId;
+        appIdToCheck = state.windows.find((w) => w.id === action.windowId)?.appId;
+      } else if (action.windowId && typeof action.windowId === 'object' && 'appId' in action.windowId) {
+        appIdToCheck = action.windowId.appId;
+        // Find the last window of this app
+        const appWindows = state.windows.filter((w) => w.appId === appIdToCheck);
+        targetWindowId = appWindows.length > 0 ? appWindows[appWindows.length - 1].id : undefined;
+      }
+      
+      if (!targetWindowId) return state;
+      
+      const remaining = state.windows.filter((w) => w.id !== targetWindowId);
+      const hasOtherWindows = remaining.some((w) => w.appId === appIdToCheck && w.state !== 'minimized');
       let updatedDock = state.dockItems;
-      if (appId && !hasOtherWindows) {
+      if (appIdToCheck && !hasOtherWindows) {
         updatedDock = state.dockItems.map((d) =>
-          d.appId === appId ? { ...d, isOpen: false, isFocused: false } : d
+          d.appId === appIdToCheck ? { ...d, isOpen: false, isFocused: false } : d
         );
       }
       const newActiveId = remaining.length > 0
@@ -333,6 +348,33 @@ function osReducer(state: OSState, action: OSAction): OSState {
       };
     }
 
+    case 'RENAME_DESKTOP_ICON': {
+      const next = state.desktopIcons.map((i) =>
+        i.id === action.id ? { ...i, name: action.name } : i
+      );
+      localStorage.setItem('ubuntuos_desktop_icons', JSON.stringify(next));
+      return { ...state, desktopIcons: next };
+    }
+
+    case 'ARRANGE_DESKTOP_ICONS': {
+      const arranged = state.desktopIcons.map((i, idx) => ({
+        ...i,
+        position: { x: 16 + (idx % 10) * 80, y: 16 + Math.floor(idx / 10) * 90 },
+      }));
+      localStorage.setItem('ubuntuos_desktop_icons', JSON.stringify(arranged));
+      return { ...state, desktopIcons: arranged };
+    }
+
+    case 'CUT_FILE': {
+      // Store cut file id in a temp state for future paste operation
+      return { ...state, clipboard: { type: 'cut', id: action.id } };
+    }
+
+    case 'COPY_FILE': {
+      // Store copied file id in a temp state for future paste operation
+      return { ...state, clipboard: { type: 'copy', id: action.id } };
+    }
+
     case 'SET_THEME': {
       const newTheme = { ...state.theme, ...action.theme };
       localStorage.setItem('ubuntuos_theme', JSON.stringify(newTheme));
@@ -356,6 +398,24 @@ function osReducer(state: OSState, action: OSAction): OSState {
     }
 
     case 'UNPIN_DOCK_ITEM': {
+      return {
+        ...state,
+        dockItems: state.dockItems.map((d) =>
+          d.appId === action.appId ? { ...d, isPinned: false } : d
+        ),
+      };
+    }
+
+    case 'PIN_TO_DOCK': {
+      return {
+        ...state,
+        dockItems: state.dockItems.map((d) =>
+          d.appId === action.appId ? { ...d, isPinned: true } : d
+        ),
+      };
+    }
+
+    case 'UNPIN_FROM_DOCK': {
       return {
         ...state,
         dockItems: state.dockItems.map((d) =>

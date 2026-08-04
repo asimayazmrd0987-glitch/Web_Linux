@@ -172,7 +172,28 @@ const Settings: React.FC = () => {
       case 'background':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-semibold text-[var(--text-primary)]">Background</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-[var(--text-primary)]">Background</h2>
+              <label className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--accent-primary)] text-white cursor-pointer hover:opacity-90 transition-opacity">
+                Upload Custom Wallpaper
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const url = ev.target?.result as string;
+                        if (url) dispatch({ type: 'SET_THEME', theme: { wallpaper: url } });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </label>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               {WALLPAPERS.map(w => (
                 <button
@@ -245,7 +266,28 @@ const Settings: React.FC = () => {
               </div>
               <div className="flex items-center justify-between">
                 <div className="text-sm text-[var(--text-primary)]">Alert Sound</div>
-                <Toggle value={!!s('alert_sound', true)} onChange={v => updateSetting('alert_sound', v)} />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+                      const osc = ctx.createOscillator();
+                      const gain = ctx.createGain();
+                      osc.type = 'sine';
+                      osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5 note
+                      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5 chime
+                      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                      osc.connect(gain);
+                      gain.connect(ctx.destination);
+                      osc.start();
+                      osc.stop(ctx.currentTime + 0.3);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded bg-[var(--bg-hover)] hover:bg-[var(--accent-primary)] hover:text-white transition-colors"
+                  >
+                    Test Chime 🔔
+                  </button>
+                  <Toggle value={!!s('alert_sound', true)} onChange={v => updateSetting('alert_sound', v)} />
+                </div>
               </div>
             </div>
           </div>

@@ -4,6 +4,7 @@
 
 import { useCallback, memo, useState, useRef } from 'react';
 import { useOS } from '@/hooks/useOSStore';
+import { useFileSystem } from '@/hooks/useFileSystem';
 import * as Icons from 'lucide-react';
 import type { LucideProps } from 'lucide-react';
 
@@ -18,9 +19,42 @@ const GRID_Y = 90;
 const Desktop = memo(function Desktop() {
   const { state, dispatch } = useOS();
   const { desktopIcons, theme } = state;
+  const fs = useFileSystem();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isHostDragOver, setIsHostDragOver] = useState(false);
   const desktopRef = useRef<HTMLDivElement>(null);
+
+  const handleHostDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsHostDragOver(false);
+      const files = Array.from(e.dataTransfer.files);
+      const desktopNode = fs.findNodeByPath('/home/user/Desktop');
+      if (desktopNode && files.length > 0) {
+        files.forEach((file) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const content = (event.target?.result as string) || '';
+            fs.createFile(desktopNode.id, file.name, content);
+            dispatch({
+              type: 'ADD_NOTIFICATION',
+              notification: {
+                appId: 'filemanager',
+                appName: 'File System',
+                appIcon: 'Folder',
+                title: 'File Uploaded',
+                message: `Uploaded "${file.name}" to Desktop`,
+                isRead: false,
+              },
+            });
+          };
+          reader.readAsText(file);
+        });
+      }
+    },
+    [fs, dispatch]
+  );
 
   const handleIconDoubleClick = useCallback(
     (icon: typeof desktopIcons[0]) => {
@@ -109,7 +143,20 @@ const Desktop = memo(function Desktop() {
       onMouseUp={handleMouseUp}
       onContextMenu={handleDesktopContextMenu}
       onClick={() => dispatch({ type: 'SELECT_DESKTOP_ICON', id: null })}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsHostDragOver(true);
+      }}
+      onDragLeave={() => setIsHostDragOver(false)}
+      onDrop={handleHostDrop}
     >
+      {/* Drag and Drop Dropzone Highlight */}
+      {isHostDragOver && (
+        <div className="absolute inset-4 z-50 border-4 border-dashed border-emerald-400/70 bg-emerald-950/30 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center gap-3 text-emerald-200 pointer-events-none">
+          <Icons.UploadCloud size={64} className="animate-bounce text-emerald-400" />
+          <span className="text-xl font-bold">Drop files here to upload to WebUbuntu Desktop</span>
+        </div>
+      )}
       {/* Desktop Icons */}
       {desktopIcons.map((icon) => (
         <div

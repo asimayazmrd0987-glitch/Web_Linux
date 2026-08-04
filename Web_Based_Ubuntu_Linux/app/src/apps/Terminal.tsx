@@ -933,7 +933,35 @@ export default function Terminal() {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Tab' && activeMode === 'normal') {
+        e.preventDefault();
+        const parts = input.split(' ');
+        const lastPart = parts[parts.length - 1];
+
+        if (parts.length === 1) {
+          // Command auto-completion
+          const availableCmds = [
+            'ls', 'cd', 'pwd', 'touch', 'mkdir', 'rm', 'cp', 'mv', 'cat', 'head', 'tail',
+            'grep', 'find', 'tree', 'wc', 'echo', 'nano', 'vim', 'python3', 'node', 'git',
+            'export', 'env', 'whoami', 'date', 'uname', 'clear', 'help'
+          ];
+          const matches = availableCmds.filter((c) => c.startsWith(lastPart));
+          if (matches.length === 1) {
+            setInput(matches[0] + ' ');
+          }
+        } else {
+          // File / Folder auto-completion
+          const currentNode = fs.findNodeByPath(currentPath);
+          if (currentNode) {
+            const children = fs.getChildren(currentNode.id);
+            const matches = children.filter((c) => c.name.startsWith(lastPart));
+            if (matches.length === 1) {
+              parts[parts.length - 1] = matches[0].name + (matches[0].type === 'folder' ? '/' : ' ');
+              setInput(parts.join(' '));
+            }
+          }
+        }
+      } else if (e.key === 'Enter') {
         if (activeMode === 'normal') {
           executeCommand(input);
         } else {
@@ -961,7 +989,7 @@ export default function Terminal() {
         }
       }
     },
-    [activeMode, executeCommand, handleSubModeInput, input, history, historyIndex, savedInput]
+    [activeMode, executeCommand, handleSubModeInput, input, history, historyIndex, savedInput, currentPath, fs]
   );
 
   // ANSI renderer

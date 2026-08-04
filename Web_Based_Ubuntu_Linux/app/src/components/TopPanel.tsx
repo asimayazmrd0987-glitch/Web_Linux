@@ -1,16 +1,20 @@
 // ============================================================
-// TopPanel — Activities button, clock, system tray
+// TopPanel — Activities button, clock, system tray (GNOME Quick Settings)
 // ============================================================
 
 import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { format } from 'date-fns';
-import { Wifi, Volume2, Battery, Power, Keyboard, Accessibility } from 'lucide-react';
+import { Wifi, Volume2, Battery, Power, Lock, LogOut, Settings, Sun, Moon, VolumeX } from 'lucide-react';
 import { useOS } from '@/hooks/useOSStore';
 
 const TopPanel = memo(function TopPanel() {
   const { state, dispatch } = useOS();
   const [time, setTime] = useState(new Date());
   const [sysMenuOpen, setSysMenuOpen] = useState(false);
+  const [volume, setVolume] = useState(80);
+  const [brightness, setBrightness] = useState(100);
+  const [wifiEnabled, setWifiEnabled] = useState(true);
+  const [bluetoothEnabled, setBluetoothEnabled] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +41,10 @@ const TopPanel = memo(function TopPanel() {
     dispatch({ type: 'TOGGLE_NOTIFICATION_CENTER' });
   }, [dispatch]);
 
+  const handleToggleTheme = useCallback(() => {
+    dispatch({ type: 'TOGGLE_THEME' });
+  }, [dispatch]);
+
   const formattedTime = format(time, 'EEE h:mm a');
   const formattedDate = format(time, 'EEEE, MMMM d, yyyy');
 
@@ -56,7 +64,7 @@ const TopPanel = memo(function TopPanel() {
       <div className="flex items-center">
         <button
           onClick={handleActivities}
-          className="h-7 px-3 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium"
+          className="h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium"
         >
           Activities
         </button>
@@ -65,7 +73,7 @@ const TopPanel = memo(function TopPanel() {
       {/* Center: Clock */}
       <button
         onClick={handleClockClick}
-        className="absolute left-1/2 -translate-x-1/2 h-7 px-2 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium group relative"
+        className="absolute left-1/2 -translate-x-1/2 h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium group relative"
       >
         <span>{formattedTime}</span>
         {/* Tooltip */}
@@ -74,104 +82,183 @@ const TopPanel = memo(function TopPanel() {
         </div>
       </button>
 
-      {/* Right: System tray */}
-      <div className="flex items-center gap-1">
-        <button className="h-7 px-1.5 rounded hover:bg-[var(--bg-hover)] transition-colors">
-          <Accessibility size={14} />
+      {/* Right: Unified System Controls Pill */}
+      <div className="relative" ref={menuRef}>
+        <button
+          onClick={() => setSysMenuOpen(!sysMenuOpen)}
+          className="h-6 px-2 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2"
+          style={{
+            background: sysMenuOpen ? 'var(--bg-active)' : 'transparent',
+          }}
+          title="System Menu"
+        >
+          <Wifi size={13} className={wifiEnabled ? 'text-[var(--text-primary)]' : 'text-[var(--text-disabled)]'} />
+          {volume === 0 ? <VolumeX size={13} /> : <Volume2 size={13} />}
+          <div className="flex items-center gap-1">
+            <Battery size={13} className="text-emerald-400" />
+            <span className="text-[10px] font-semibold text-emerald-400">100%</span>
+          </div>
+          <Power size={13} className="text-red-400 ml-0.5" />
         </button>
-        <button className="h-7 px-1.5 rounded hover:bg-[var(--bg-hover)] transition-colors">
-          <Keyboard size={14} />
-        </button>
-        <button className="h-7 px-1.5 rounded hover:bg-[var(--bg-hover)] transition-colors">
-          <Wifi size={14} />
-        </button>
-        <button className="h-7 px-1.5 rounded hover:bg-[var(--bg-hover)] transition-colors">
-          <Volume2 size={14} />
-        </button>
-        <button className="h-7 px-1.5 rounded hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-1">
-          <Battery size={14} />
-          <span className="text-[10px]">100%</span>
-        </button>
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setSysMenuOpen(!sysMenuOpen)}
-            className="h-7 px-1.5 rounded hover:bg-[var(--bg-hover)] transition-colors"
+
+        {/* Quick Settings Dropdown */}
+        {sysMenuOpen && (
+          <div
+            className="absolute top-full right-0 mt-1.5 p-3 rounded-2xl z-[5000] shadow-2xl flex flex-col gap-3"
+            style={{
+              background: 'rgba(30, 30, 32, 0.95)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              width: 280,
+              color: '#FFFFFF',
+              animation: 'menuAppear 150ms cubic-bezier(0, 0, 0.2, 1)',
+            }}
           >
-            <Power size={14} />
-          </button>
-
-          {sysMenuOpen && (
-            <div
-              className="absolute top-full right-0 mt-1 py-2 rounded-lg z-[5000]"
-              style={{
-                background: 'var(--bg-context-menu)',
-                boxShadow: 'var(--shadow-lg)',
-                border: '1px solid var(--border-default)',
-                width: 240,
-                animation: 'menuAppear 120ms cubic-bezier(0, 0, 0.2, 1)',
-              }}
-            >
-              {/* User row */}
-              <div className="flex items-center gap-2 px-3 py-2 mb-1">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #7C4DFF, #4A148C)' }}>
-                  <span className="text-white text-xs font-bold">U</span>
-                </div>
-                <span className="text-sm font-medium flex-1">{state.auth.userName}</span>
-                <button
-                  className="w-7 h-7 rounded flex items-center justify-center hover:bg-[var(--bg-hover)]"
-                  onClick={() => {
-                    setSysMenuOpen(false);
-                    dispatch({ type: 'OPEN_WINDOW', appId: 'settings' });
-                  }}
+            {/* User Profile Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-inner"
+                  style={{ background: 'linear-gradient(135deg, #E95420, #77216F)' }}
                 >
-                  <span className="text-xs">⚙</span>
-                </button>
-              </div>
-
-              <div className="my-1 mx-2" style={{ height: 1, background: 'var(--border-subtle)' }} />
-
-              {[
-                { label: 'Wired Connection', icon: '🌐', toggle: true },
-                { label: 'Wi-Fi', icon: '📶', toggle: true },
-                { label: 'Bluetooth', icon: '🔵', toggle: true },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--bg-hover)] cursor-pointer">
-                  <span className="text-xs">{item.icon}</span>
-                  <span className="text-sm flex-1">{item.label}</span>
-                  {item.toggle && (
-                    <div className="w-8 h-5 rounded-full relative" style={{ background: 'var(--accent-primary)' }}>
-                      <div className="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white" />
-                    </div>
-                  )}
+                  U
                 </div>
-              ))}
-
-              <div className="my-1 mx-2" style={{ height: 1, background: 'var(--border-subtle)' }} />
-
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-white">{state.auth.userName}</span>
+                  <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    100% • Fully Charged
+                  </span>
+                </div>
+              </div>
               <button
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--bg-hover)] transition-colors text-left"
-                onClick={() => { setSysMenuOpen(false); dispatch({ type: 'LOGOUT' }); }}
+                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
+                onClick={() => {
+                  setSysMenuOpen(false);
+                  dispatch({ type: 'OPEN_WINDOW', appId: 'settings' });
+                }}
+                title="Settings"
               >
-                <span>🔒</span>
-                Lock
-              </button>
-              <button
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--bg-hover)] transition-colors text-left"
-                onClick={() => { setSysMenuOpen(false); dispatch({ type: 'LOGOUT' }); }}
-              >
-                <span>🚪</span>
-                Log Out
-              </button>
-              <button
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-[var(--bg-hover)] transition-colors text-left"
-                onClick={() => setSysMenuOpen(false)}
-              >
-                <span>⏻</span>
-                Power Off / Restart
+                <Settings size={15} />
               </button>
             </div>
-          )}
-        </div>
+
+            {/* Quick Toggle Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setWifiEnabled(!wifiEnabled)}
+                className={`flex items-center gap-2.5 p-2 rounded-xl transition-all ${
+                  wifiEnabled ? 'bg-orange-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                }`}
+              >
+                <Wifi size={16} />
+                <div className="flex flex-col text-left">
+                  <span className="text-[11px] font-medium leading-none">Wi-Fi</span>
+                  <span className="text-[9px] opacity-75">{wifiEnabled ? 'Ubuntu_5G' : 'Off'}</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setBluetoothEnabled(!bluetoothEnabled)}
+                className={`flex items-center gap-2.5 p-2 rounded-xl transition-all ${
+                  bluetoothEnabled ? 'bg-orange-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                }`}
+              >
+                <span className="text-sm">🔵</span>
+                <div className="flex flex-col text-left">
+                  <span className="text-[11px] font-medium leading-none">Bluetooth</span>
+                  <span className="text-[9px] opacity-75">{bluetoothEnabled ? 'On' : 'Off'}</span>
+                </div>
+              </button>
+
+              <button
+                onClick={handleToggleTheme}
+                className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all"
+              >
+                {state.theme.mode === 'dark' ? <Moon size={16} className="text-purple-400" /> : <Sun size={16} className="text-amber-400" />}
+                <div className="flex flex-col text-left">
+                  <span className="text-[11px] font-medium leading-none">Style</span>
+                  <span className="text-[9px] opacity-75 capitalize">{state.theme.mode} Mode</span>
+                </div>
+              </button>
+
+              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 text-white/80">
+                <Battery size={16} className="text-emerald-400" />
+                <div className="flex flex-col text-left">
+                  <span className="text-[11px] font-medium leading-none">Power</span>
+                  <span className="text-[9px] opacity-75">Balanced</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Volume Slider */}
+            <div className="flex items-center gap-2 px-1">
+              <button
+                onClick={() => setVolume(volume === 0 ? 80 : 0)}
+                className="text-white/70 hover:text-white"
+              >
+                {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="flex-1 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              />
+              <span className="text-[10px] text-white/60 w-6 text-right">{volume}%</span>
+            </div>
+
+            {/* Brightness Slider */}
+            <div className="flex items-center gap-2 px-1">
+              <Sun size={15} className="text-white/70" />
+              <input
+                type="range"
+                min="20"
+                max="100"
+                value={brightness}
+                onChange={(e) => setBrightness(Number(e.target.value))}
+                className="flex-1 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              />
+              <span className="text-[10px] text-white/60 w-6 text-right">{brightness}%</span>
+            </div>
+
+            {/* Power Actions Footer */}
+            <div className="flex items-center justify-between pt-2 border-t border-white/10">
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-xs text-white transition-colors"
+                onClick={() => {
+                  setSysMenuOpen(false);
+                  dispatch({ type: 'LOGOUT' });
+                }}
+              >
+                <Lock size={13} />
+                Lock
+              </button>
+
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-xs text-white transition-colors"
+                onClick={() => {
+                  setSysMenuOpen(false);
+                  dispatch({ type: 'LOGOUT' });
+                }}
+              >
+                <LogOut size={13} />
+                Log Out
+              </button>
+
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-xs font-semibold text-white transition-colors"
+                onClick={() => setSysMenuOpen(false)}
+              >
+                <Power size={13} />
+                Power Off
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -185,3 +272,4 @@ const TopPanel = memo(function TopPanel() {
 });
 
 export default TopPanel;
+

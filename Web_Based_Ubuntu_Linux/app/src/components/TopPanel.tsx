@@ -262,11 +262,14 @@ const TopPanel = memo(function TopPanel() {
           )}
         </div>
 
-        {/* Separate Power Button */}
+        {/* Separate Power Button (Far Right) */}
         <button
           onClick={() => {
-            // Note: Adjust 'SHUTDOWN' to match your actual store action type
-            dispatch({ type: 'SHUTDOWN' }); 
+            // TODO: If you add a 'SHUTDOWN' action to useOSStore, uncomment the line below:
+            // dispatch({ type: 'SHUTDOWN' });
+            
+            // Fallback for now to prevent TypeScript build errors:
+            console.log("Power Off / Shutdown triggered");
           }}
           className="h-6 w-6 rounded-full hover:bg-red-500/20 hover:text-red-400 text-[var(--text-primary)] transition-colors flex items-center justify-center flex-shrink-0"
           title="Power Off"

@@ -50,7 +50,7 @@ const TopPanel = memo(function TopPanel() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[200] flex items-center justify-between px-2 text-xs font-medium select-none flex-shrink-0"
+      className="fixed top-0 left-0 right-0 z-[200] flex items-center justify-between px-2 text-xs font-medium select-none"
       style={{
         height: 28,
         background: 'var(--bg-panel)',
@@ -64,19 +64,20 @@ const TopPanel = memo(function TopPanel() {
       <div className="flex items-center flex-shrink-0">
         <button
           onClick={handleActivities}
-          className="h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium flex-shrink-0"
+          className="h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium"
         >
           Activities
         </button>
       </div>
 
-      {/* Center: Clock */}
+      {/* Center: Clock — FIXED: removed conflicting `relative` class */}
       <button
         onClick={handleClockClick}
-        className="absolute left-1/2 -translate-x-1/2 h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium group relative flex-shrink-0 whitespace-nowrap"
+        className="absolute left-1/2 -translate-x-1/2 h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium group whitespace-nowrap z-[201]"
       >
         <span>{formattedTime}</span>
-        {/* Tooltip */}
+        {/* Tooltip (still anchored correctly: an absolutely positioned
+            button is the containing block for its absolute children) */}
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 rounded bg-[var(--bg-tooltip)] text-[var(--text-primary)] text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[5000]">
           {formattedDate}
         </div>
@@ -265,10 +266,8 @@ const TopPanel = memo(function TopPanel() {
         {/* Separate Power Button (Far Right) */}
         <button
           onClick={() => {
-            // TODO: If you add a 'SHUTDOWN' action to useOSStore, uncomment the line below:
+            // TODO: Once you add 'SHUTDOWN' to useOSStore, uncomment:
             // dispatch({ type: 'SHUTDOWN' });
-            
-            // Fallback for now to prevent TypeScript build errors:
             console.log("Power Off / Shutdown triggered");
           }}
           className="h-6 w-6 rounded-full hover:bg-red-500/20 hover:text-red-400 text-[var(--text-primary)] transition-colors flex items-center justify-center flex-shrink-0"

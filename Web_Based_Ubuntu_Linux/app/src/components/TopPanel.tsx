@@ -1,14 +1,49 @@
 // ============================================================
 // TopPanel — Activities button, clock, system tray (GNOME Quick Settings)
+// Now driven by REAL battery & network telemetry
 // ============================================================
 
 import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { format } from 'date-fns';
-import { Wifi, Volume2, Battery, Power, Lock, LogOut, Settings, Sun, Moon, VolumeX } from 'lucide-react';
+import { Wifi, WifiOff, Volume2, Battery, Power, Lock, LogOut, Settings, Sun, Moon, VolumeX, Zap } from 'lucide-react';
 import { useOS } from '@/hooks/useOSStore';
+import { useBattery, useNetwork } from '@/hooks/useSystemStats';
+
+// Wi-Fi icon with live signal bars (mirrors lucide geometry)
+const WifiSignalIcon = memo(function WifiSignalIcon({
+  level,
+  size = 13,
+  className = '',
+}: {
+  level: number;
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M12 20h.01" opacity={1} />
+      <path d="M8.5 16.429a5 5 0 0 1 7 0" opacity={level >= 1 ? 1 : 0.25} />
+      <path d="M5 12.859a10 10 0 0 1 14 0" opacity={level >= 2 ? 1 : 0.25} />
+      <path d="M2 8.82a15 15 0 0 1 20 0" opacity={level >= 3 ? 1 : 0.25} />
+    </svg>
+  );
+});
 
 const TopPanel = memo(function TopPanel() {
   const { state, dispatch } = useOS();
+  const battery = useBattery();
+  const network = useNetwork();
+
   const [time, setTime] = useState(new Date());
   const [sysMenuOpen, setSysMenuOpen] = useState(false);
   const [volume, setVolume] = useState(80);
@@ -48,6 +83,18 @@ const TopPanel = memo(function TopPanel() {
   const formattedTime = format(time, 'EEE h:mm a');
   const formattedDate = format(time, 'EEEE, MMMM d, yyyy');
 
+  // ---- Live battery tone: green > 60 or charging, amber 21–60, red ≤ 20 ----
+  const batteryTone =
+    battery.percent === null
+      ? 'text-[var(--text-primary)]'
+      : battery.charging || battery.percent > 60
+      ? 'text-emerald-400'
+      : battery.percent > 20
+      ? 'text-amber-400'
+      : 'text-red-400';
+
+  const wifiActive = wifiEnabled && network.online;
+
   return (
     <div
       className="fixed top-0 left-0 right-0 z-[200] flex items-center justify-between px-2 text-xs font-medium select-none"
@@ -70,14 +117,12 @@ const TopPanel = memo(function TopPanel() {
         </button>
       </div>
 
-      {/* Center: Clock — FIXED: removed conflicting `relative` class */}
+      {/* Center: Clock */}
       <button
         onClick={handleClockClick}
         className="absolute left-1/2 -translate-x-1/2 h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium group whitespace-nowrap z-[201]"
       >
         <span>{formattedTime}</span>
-        {/* Tooltip (still anchored correctly: an absolutely positioned
-            button is the containing block for its absolute children) */}
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 rounded bg-[var(--bg-tooltip)] text-[var(--text-primary)] text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[5000]">
           {formattedDate}
         </div>
@@ -95,11 +140,22 @@ const TopPanel = memo(function TopPanel() {
             }}
             title="System Menu"
           >
-            <Wifi size={13} className={`flex-shrink-0 ${wifiEnabled ? 'text-[var(--text-primary)]' : 'text-[var(--text-disabled)]'}`} />
+            {/* REAL Wi-Fi signal */}
+            {wifiActive ? (
+              <WifiSignalIcon level={network.signal} className="text-[var(--text-primary)] flex-shrink-0" />
+            ) : (
+              <WifiOff size={13} className="text-[var(--text-disabled)] flex-shrink-0" />
+            )}
+
             {volume === 0 ? <VolumeX size={13} className="flex-shrink-0" /> : <Volume2 size={13} className="flex-shrink-0" />}
+
+            {/* REAL battery */}
             <div className="flex items-center gap-1 flex-shrink-0">
-              <Battery size={13} className="text-emerald-400 flex-shrink-0" />
-              <span className="text-[10px] font-semibold text-emerald-400 flex-shrink-0">100%</span>
+              <Battery size={13} className={batteryTone} />
+              <span className={`text-[10px] font-semibold ${batteryTone}`}>
+                {battery.percent !== null ? `${battery.percent}%` : '—'}
+              </span>
+              {battery.charging && <Zap size={10} className="text-emerald-400 flex-shrink-0" />}
             </div>
           </button>
 
@@ -129,8 +185,14 @@ const TopPanel = memo(function TopPanel() {
                   <div className="flex flex-col min-w-0">
                     <span className="text-xs font-semibold text-white truncate">{state.auth.userName}</span>
                     <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                      100% • Fully Charged
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          battery.charging ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'
+                        }`}
+                      />
+                      {battery.percent !== null
+                        ? `${battery.percent}% • ${battery.charging ? 'Charging' : 'On Battery'}`
+                        : 'Battery telemetry unavailable'}
                     </span>
                   </div>
                 </div>
@@ -151,13 +213,21 @@ const TopPanel = memo(function TopPanel() {
                 <button
                   onClick={() => setWifiEnabled(!wifiEnabled)}
                   className={`flex items-center gap-2.5 p-2 rounded-xl transition-all flex-shrink-0 ${
-                    wifiEnabled ? 'bg-orange-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                    wifiActive ? 'bg-orange-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
                   }`}
                 >
-                  <Wifi size={16} className="flex-shrink-0" />
+                  {wifiActive ? <Wifi size={16} className="flex-shrink-0" /> : <WifiOff size={16} className="flex-shrink-0" />}
                   <div className="flex flex-col text-left min-w-0">
                     <span className="text-[11px] font-medium leading-none truncate">Wi-Fi</span>
-                    <span className="text-[9px] opacity-75 truncate">{wifiEnabled ? 'Ubuntu_5G' : 'Off'}</span>
+                    <span className="text-[9px] opacity-75 truncate">
+                      {!network.online
+                        ? 'No Connection'
+                        : wifiEnabled
+                        ? network.downlink !== null
+                          ? `${network.downlink} Mbps`
+                          : 'Connected'
+                        : 'Off'}
+                    </span>
                   </div>
                 </button>
 
@@ -186,10 +256,12 @@ const TopPanel = memo(function TopPanel() {
                 </button>
 
                 <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 text-white/80 flex-shrink-0">
-                  <Battery size={16} className="text-emerald-400 flex-shrink-0" />
+                  <Battery size={16} className={batteryTone} />
                   <div className="flex flex-col text-left min-w-0">
                     <span className="text-[11px] font-medium leading-none truncate">Power</span>
-                    <span className="text-[9px] opacity-75 truncate">Balanced</span>
+                    <span className="text-[9px] opacity-75 truncate">
+                      {battery.charging ? 'Charging' : 'Balanced'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -266,9 +338,9 @@ const TopPanel = memo(function TopPanel() {
         {/* Separate Power Button (Far Right) */}
         <button
           onClick={() => {
-            // TODO: Once you add 'SHUTDOWN' to useOSStore, uncomment:
+            // TODO: Once 'SHUTDOWN' exists in useOSStore, uncomment:
             // dispatch({ type: 'SHUTDOWN' });
-            console.log("Power Off / Shutdown triggered");
+            console.log('Power Off / Shutdown triggered');
           }}
           className="h-6 w-6 rounded-full hover:bg-red-500/20 hover:text-red-400 text-[var(--text-primary)] transition-colors flex items-center justify-center flex-shrink-0"
           title="Power Off"

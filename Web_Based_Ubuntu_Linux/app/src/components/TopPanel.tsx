@@ -50,7 +50,7 @@ const TopPanel = memo(function TopPanel() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[200] flex items-center justify-between px-2 text-xs font-medium select-none"
+      className="fixed top-0 left-0 right-0 z-[200] flex items-center justify-between px-2 text-xs font-medium select-none flex-shrink-0"
       style={{
         height: 28,
         background: 'var(--bg-panel)',
@@ -61,10 +61,10 @@ const TopPanel = memo(function TopPanel() {
       }}
     >
       {/* Left: Activities */}
-      <div className="flex items-center">
+      <div className="flex items-center flex-shrink-0">
         <button
           onClick={handleActivities}
-          className="h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium"
+          className="h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium flex-shrink-0"
         >
           Activities
         </button>
@@ -73,7 +73,7 @@ const TopPanel = memo(function TopPanel() {
       {/* Center: Clock */}
       <button
         onClick={handleClockClick}
-        className="absolute left-1/2 -translate-x-1/2 h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium group relative"
+        className="absolute left-1/2 -translate-x-1/2 h-6 px-2.5 rounded hover:bg-[var(--bg-hover)] transition-colors text-xs font-medium group relative flex-shrink-0 whitespace-nowrap"
       >
         <span>{formattedTime}</span>
         {/* Tooltip */}
@@ -82,183 +82,197 @@ const TopPanel = memo(function TopPanel() {
         </div>
       </button>
 
-      {/* Right: Unified System Controls Pill */}
-      <div className="relative" ref={menuRef}>
-        <button
-          onClick={() => setSysMenuOpen(!sysMenuOpen)}
-          className="h-6 px-2 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2"
-          style={{
-            background: sysMenuOpen ? 'var(--bg-active)' : 'transparent',
-          }}
-          title="System Menu"
-        >
-          <Wifi size={13} className={wifiEnabled ? 'text-[var(--text-primary)]' : 'text-[var(--text-disabled)]'} />
-          {volume === 0 ? <VolumeX size={13} /> : <Volume2 size={13} />}
-          <div className="flex items-center gap-1">
-            <Battery size={13} className="text-emerald-400" />
-            <span className="text-[10px] font-semibold text-emerald-400">100%</span>
-          </div>
-          <Power size={13} className="text-red-400 ml-0.5" />
-        </button>
-
-        {/* Quick Settings Dropdown */}
-        {sysMenuOpen && (
-          <div
-            className="absolute top-full right-0 mt-1.5 p-3 rounded-2xl z-[5000] shadow-2xl flex flex-col gap-3"
+      {/* Right: System Controls */}
+      <div className="flex items-center gap-2 flex-shrink-0 pr-1">
+        {/* Unified System Controls Pill */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setSysMenuOpen(!sysMenuOpen)}
+            className="h-6 px-2 rounded-full hover:bg-[var(--bg-hover)] transition-colors flex items-center gap-2 flex-shrink-0"
             style={{
-              background: 'rgba(30, 30, 32, 0.95)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              width: 280,
-              color: '#FFFFFF',
-              animation: 'menuAppear 150ms cubic-bezier(0, 0, 0.2, 1)',
+              background: sysMenuOpen ? 'var(--bg-active)' : 'transparent',
             }}
+            title="System Menu"
           >
-            {/* User Profile Header */}
-            <div className="flex items-center justify-between pb-2 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-inner"
-                  style={{ background: 'linear-gradient(135deg, #E95420, #77216F)' }}
+            <Wifi size={13} className={`flex-shrink-0 ${wifiEnabled ? 'text-[var(--text-primary)]' : 'text-[var(--text-disabled)]'}`} />
+            {volume === 0 ? <VolumeX size={13} className="flex-shrink-0" /> : <Volume2 size={13} className="flex-shrink-0" />}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <Battery size={13} className="text-emerald-400 flex-shrink-0" />
+              <span className="text-[10px] font-semibold text-emerald-400 flex-shrink-0">100%</span>
+            </div>
+          </button>
+
+          {/* Quick Settings Dropdown */}
+          {sysMenuOpen && (
+            <div
+              className="absolute top-full right-0 mt-1.5 p-3 rounded-2xl z-[5000] shadow-2xl flex flex-col gap-3"
+              style={{
+                background: 'rgba(30, 30, 32, 0.95)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                width: 280,
+                color: '#FFFFFF',
+                animation: 'menuAppear 150ms cubic-bezier(0, 0, 0.2, 1)',
+              }}
+            >
+              {/* User Profile Header */}
+              <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shadow-inner flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #E95420, #77216F)' }}
+                  >
+                    U
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold text-white truncate">{state.auth.userName}</span>
+                    <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                      100% • Fully Charged
+                    </span>
+                  </div>
+                </div>
+                <button
+                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0"
+                  onClick={() => {
+                    setSysMenuOpen(false);
+                    dispatch({ type: 'OPEN_WINDOW', appId: 'settings' });
+                  }}
+                  title="Settings"
                 >
-                  U
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-white">{state.auth.userName}</span>
-                  <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    100% • Fully Charged
-                  </span>
+                  <Settings size={15} className="flex-shrink-0" />
+                </button>
+              </div>
+
+              {/* Quick Toggle Grid */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setWifiEnabled(!wifiEnabled)}
+                  className={`flex items-center gap-2.5 p-2 rounded-xl transition-all flex-shrink-0 ${
+                    wifiEnabled ? 'bg-orange-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
+                >
+                  <Wifi size={16} className="flex-shrink-0" />
+                  <div className="flex flex-col text-left min-w-0">
+                    <span className="text-[11px] font-medium leading-none truncate">Wi-Fi</span>
+                    <span className="text-[9px] opacity-75 truncate">{wifiEnabled ? 'Ubuntu_5G' : 'Off'}</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setBluetoothEnabled(!bluetoothEnabled)}
+                  className={`flex items-center gap-2.5 p-2 rounded-xl transition-all flex-shrink-0 ${
+                    bluetoothEnabled ? 'bg-orange-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
+                >
+                  <span className="text-sm flex-shrink-0">🔵</span>
+                  <div className="flex flex-col text-left min-w-0">
+                    <span className="text-[11px] font-medium leading-none truncate">Bluetooth</span>
+                    <span className="text-[9px] opacity-75 truncate">{bluetoothEnabled ? 'On' : 'Off'}</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={handleToggleTheme}
+                  className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all flex-shrink-0"
+                >
+                  {state.theme.mode === 'dark' ? <Moon size={16} className="text-purple-400 flex-shrink-0" /> : <Sun size={16} className="text-amber-400 flex-shrink-0" />}
+                  <div className="flex flex-col text-left min-w-0">
+                    <span className="text-[11px] font-medium leading-none truncate">Style</span>
+                    <span className="text-[9px] opacity-75 truncate capitalize">{state.theme.mode} Mode</span>
+                  </div>
+                </button>
+
+                <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 text-white/80 flex-shrink-0">
+                  <Battery size={16} className="text-emerald-400 flex-shrink-0" />
+                  <div className="flex flex-col text-left min-w-0">
+                    <span className="text-[11px] font-medium leading-none truncate">Power</span>
+                    <span className="text-[9px] opacity-75 truncate">Balanced</span>
+                  </div>
                 </div>
               </div>
-              <button
-                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
-                onClick={() => {
-                  setSysMenuOpen(false);
-                  dispatch({ type: 'OPEN_WINDOW', appId: 'settings' });
-                }}
-                title="Settings"
-              >
-                <Settings size={15} />
-              </button>
-            </div>
 
-            {/* Quick Toggle Grid */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setWifiEnabled(!wifiEnabled)}
-                className={`flex items-center gap-2.5 p-2 rounded-xl transition-all ${
-                  wifiEnabled ? 'bg-orange-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
-                }`}
-              >
-                <Wifi size={16} />
-                <div className="flex flex-col text-left">
-                  <span className="text-[11px] font-medium leading-none">Wi-Fi</span>
-                  <span className="text-[9px] opacity-75">{wifiEnabled ? 'Ubuntu_5G' : 'Off'}</span>
-                </div>
-              </button>
+              {/* Volume Slider */}
+              <div className="flex items-center gap-2 px-1 flex-shrink-0">
+                <button
+                  onClick={() => setVolume(volume === 0 ? 80 : 0)}
+                  className="text-white/70 hover:text-white flex-shrink-0"
+                >
+                  {volume === 0 ? <VolumeX size={15} className="flex-shrink-0" /> : <Volume2 size={15} className="flex-shrink-0" />}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={volume}
+                  onChange={(e) => setVolume(Number(e.target.value))}
+                  className="flex-1 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500 min-w-0"
+                />
+                <span className="text-[10px] text-white/60 w-6 text-right flex-shrink-0">{volume}%</span>
+              </div>
 
-              <button
-                onClick={() => setBluetoothEnabled(!bluetoothEnabled)}
-                className={`flex items-center gap-2.5 p-2 rounded-xl transition-all ${
-                  bluetoothEnabled ? 'bg-orange-600 text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
-                }`}
-              >
-                <span className="text-sm">🔵</span>
-                <div className="flex flex-col text-left">
-                  <span className="text-[11px] font-medium leading-none">Bluetooth</span>
-                  <span className="text-[9px] opacity-75">{bluetoothEnabled ? 'On' : 'Off'}</span>
-                </div>
-              </button>
+              {/* Brightness Slider */}
+              <div className="flex items-center gap-2 px-1 flex-shrink-0">
+                <Sun size={15} className="text-white/70 flex-shrink-0" />
+                <input
+                  type="range"
+                  min="20"
+                  max="100"
+                  value={brightness}
+                  onChange={(e) => setBrightness(Number(e.target.value))}
+                  className="flex-1 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500 min-w-0"
+                />
+                <span className="text-[10px] text-white/60 w-6 text-right flex-shrink-0">{brightness}%</span>
+              </div>
 
-              <button
-                onClick={handleToggleTheme}
-                className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all"
-              >
-                {state.theme.mode === 'dark' ? <Moon size={16} className="text-purple-400" /> : <Sun size={16} className="text-amber-400" />}
-                <div className="flex flex-col text-left">
-                  <span className="text-[11px] font-medium leading-none">Style</span>
-                  <span className="text-[9px] opacity-75 capitalize">{state.theme.mode} Mode</span>
-                </div>
-              </button>
+              {/* Power Actions Footer */}
+              <div className="flex items-center justify-between pt-2 border-t border-white/10 flex-shrink-0">
+                <button
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-xs text-white transition-colors flex-shrink-0"
+                  onClick={() => {
+                    setSysMenuOpen(false);
+                    dispatch({ type: 'LOGOUT' });
+                  }}
+                >
+                  <Lock size={13} className="flex-shrink-0" />
+                  Lock
+                </button>
 
-              <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 text-white/80">
-                <Battery size={16} className="text-emerald-400" />
-                <div className="flex flex-col text-left">
-                  <span className="text-[11px] font-medium leading-none">Power</span>
-                  <span className="text-[9px] opacity-75">Balanced</span>
-                </div>
+                <button
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-xs text-white transition-colors flex-shrink-0"
+                  onClick={() => {
+                    setSysMenuOpen(false);
+                    dispatch({ type: 'LOGOUT' });
+                  }}
+                >
+                  <LogOut size={13} className="flex-shrink-0" />
+                  Log Out
+                </button>
+
+                <button
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-xs font-semibold text-white transition-colors flex-shrink-0"
+                  onClick={() => setSysMenuOpen(false)}
+                >
+                  <Power size={13} className="flex-shrink-0" />
+                  Power Off
+                </button>
               </div>
             </div>
+          )}
+        </div>
 
-            {/* Volume Slider */}
-            <div className="flex items-center gap-2 px-1">
-              <button
-                onClick={() => setVolume(volume === 0 ? 80 : 0)}
-                className="text-white/70 hover:text-white"
-              >
-                {volume === 0 ? <VolumeX size={15} /> : <Volume2 size={15} />}
-              </button>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={volume}
-                onChange={(e) => setVolume(Number(e.target.value))}
-                className="flex-1 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500"
-              />
-              <span className="text-[10px] text-white/60 w-6 text-right">{volume}%</span>
-            </div>
-
-            {/* Brightness Slider */}
-            <div className="flex items-center gap-2 px-1">
-              <Sun size={15} className="text-white/70" />
-              <input
-                type="range"
-                min="20"
-                max="100"
-                value={brightness}
-                onChange={(e) => setBrightness(Number(e.target.value))}
-                className="flex-1 h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-orange-500"
-              />
-              <span className="text-[10px] text-white/60 w-6 text-right">{brightness}%</span>
-            </div>
-
-            {/* Power Actions Footer */}
-            <div className="flex items-center justify-between pt-2 border-t border-white/10">
-              <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-xs text-white transition-colors"
-                onClick={() => {
-                  setSysMenuOpen(false);
-                  dispatch({ type: 'LOGOUT' });
-                }}
-              >
-                <Lock size={13} />
-                Lock
-              </button>
-
-              <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-xs text-white transition-colors"
-                onClick={() => {
-                  setSysMenuOpen(false);
-                  dispatch({ type: 'LOGOUT' });
-                }}
-              >
-                <LogOut size={13} />
-                Log Out
-              </button>
-
-              <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-xs font-semibold text-white transition-colors"
-                onClick={() => setSysMenuOpen(false)}
-              >
-                <Power size={13} />
-                Power Off
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Separate Power Button */}
+        <button
+          onClick={() => {
+            // Note: Adjust 'SHUTDOWN' to match your actual store action type
+            dispatch({ type: 'SHUTDOWN' }); 
+          }}
+          className="h-6 w-6 rounded-full hover:bg-red-500/20 hover:text-red-400 text-[var(--text-primary)] transition-colors flex items-center justify-center flex-shrink-0"
+          title="Power Off"
+        >
+          <Power size={13} className="flex-shrink-0" />
+        </button>
       </div>
 
       <style>{`
@@ -272,4 +286,3 @@ const TopPanel = memo(function TopPanel() {
 });
 
 export default TopPanel;
-

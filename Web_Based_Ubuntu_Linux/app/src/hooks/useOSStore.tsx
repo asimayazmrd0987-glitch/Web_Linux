@@ -331,13 +331,46 @@ function osReducer(state: OSState, action: OSAction): OSState {
       return { ...state, desktopIcons: next };
     }
 
-    case 'UPDATE_DESKTOP_ICON_POSITION': {
-      const next = state.desktopIcons.map((i) =>
-        i.id === action.id ? { ...i, position: action.position } : i
-      );
-      localStorage.setItem('ubuntuos_desktop_icons', JSON.stringify(next));
-      return { ...state, desktopIcons: next };
+   case 'UPDATE_DESKTOP_ICON_POSITION': {
+  const { id, gridX, gridY } = action.payload; 
+  const currentIcons = state.desktopIcons;    
+
+  const isOccupied = currentIcons.some(
+    (icon) => icon.id !== id && icon.gridX === gridX && icon.gridY === gridY
+  );
+
+  let finalX = gridX;
+  let finalY = gridY;
+
+  if (isOccupied) {
+    let foundFree = false;
+    for (let radius = 1; radius < 20 && !foundFree; radius++) {
+      for (let dx = -radius; dx <= radius && !foundFree; dx++) {
+        for (let dy = -radius; dy <= radius && !foundFree; dy++) {
+          const checkX = gridX + dx;
+          const checkY = gridY + dy;
+          
+          const isCheckOccupied = currentIcons.some(
+            (icon) => icon.id !== id && icon.gridX === checkX && icon.gridY === checkY
+          );
+          
+          if (!isCheckOccupied) {
+            finalX = checkX;
+            finalY = checkY;
+            foundFree = true;
+          }
+        }
+      }
     }
+  }
+
+  return {
+    ...state,
+    desktopIcons: currentIcons.map((icon) =>
+      icon.id === id ? { ...icon, gridX: finalX, gridY: finalY } : icon
+    ),
+  };
+}
 
     case 'SELECT_DESKTOP_ICON': {
       return {

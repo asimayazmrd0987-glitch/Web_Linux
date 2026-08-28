@@ -44,6 +44,8 @@ const Btn: React.FC<{
   colSpan?: number;
 }> = ({ label, onClick, variant = 'num', className = '', colSpan }) => (
   <button
+    type="button" // ← ADD THIS (prevents accidental form submission behavior)
+    onMouseDown={(e) => e.stopPropagation()} // ← ADD THIS (stops window manager from hijacking the click)
     onClick={onClick}
     className={
       `h-12 rounded-md text-sm font-medium transition-all duration-75 active:scale-95 flex items-center justify-center ` +

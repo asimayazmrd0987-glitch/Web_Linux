@@ -243,27 +243,27 @@ const Desktop = memo(function Desktop() {
     }}
   >
     <div
-      className="w-12 h-12 rounded-lg flex items-center justify-center transition-all"
-      style={{
-        background: icon.isSelected
-          ? 'rgba(124,77,255,0.20)'
-          : 'transparent',
-        border: icon.isSelected
-          ? '1px dashed rgba(124,77,255,0.50)'
-          : '1px solid transparent',
-      }}
-    >
-      <DynamicIcon
-        name={icon.icon}
-        size={32}
-        draggable={false}
-        onDragStart={(e) => e.preventDefault()}
-        className="text-[var(--text-primary)] drop-shadow-lg select-none pointer-events-none"
-        style={{
-          filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))',
-        }}
-      />
-    </div>
+  className="w-12 h-12 rounded-lg flex items-center justify-center transition-all"
+  draggable={false}
+  onDragStart={(e) => e.preventDefault()}
+  style={{
+    background: icon.isSelected
+      ? 'rgba(124,77,255,0.20)'
+      : 'transparent',
+    border: icon.isSelected
+      ? '1px dashed rgba(124,77,255,0.50)'
+      : '1px solid transparent',
+  }}
+>
+  <DynamicIcon
+    name={icon.icon}
+    size={32}
+    className="text-[var(--text-primary)] drop-shadow-lg select-none pointer-events-none"
+    style={{
+      filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))',
+    }}
+  />
+</div>
 
     <span
       draggable={false}

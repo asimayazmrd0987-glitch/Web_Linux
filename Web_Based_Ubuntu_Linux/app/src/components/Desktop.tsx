@@ -66,16 +66,19 @@ const Desktop = memo(function Desktop() {
   );
 
   const handleIconMouseDown = useCallback(
-    (e: React.MouseEvent, icon: typeof desktopIcons[0]) => {
-      e.stopPropagation();
-      dispatch({ type: 'SELECT_DESKTOP_ICON', id: icon.id });
-      if (icon.appId) {
-        setDraggingId(icon.id);
-        setDragOffset({ x: e.clientX, y: e.clientY });
-      }
-    },
-    [dispatch]
-  );
+  (e: React.MouseEvent, icon: typeof desktopIcons[0]) => {
+    e.preventDefault(); // Prevent text selection while dragging
+    e.stopPropagation();
+
+    dispatch({ type: 'SELECT_DESKTOP_ICON', id: icon.id });
+
+    if (icon.appId) {
+      setDraggingId(icon.id);
+      setDragOffset({ x: e.clientX, y: e.clientY });
+    }
+  },
+  [dispatch]
+);
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
@@ -131,7 +134,7 @@ const Desktop = memo(function Desktop() {
   return (
   <div
     ref={desktopRef}
-    className="fixed inset-0 z-10"
+    className="fixed inset-0 z-10 select-none"
     style={{
       backgroundImage: `url(${theme.wallpaper})`,
       backgroundSize: 'cover',
@@ -146,7 +149,6 @@ const Desktop = memo(function Desktop() {
 
     onDragOver={(e) => {
       // Ignore drags of text or desktop icons; only react to real files
-      // updated
       if (!e.dataTransfer.types.includes('Files')) {
         return;
       }
@@ -167,66 +169,118 @@ const Desktop = memo(function Desktop() {
           <span className="text-xl font-bold">Drop files here to upload to WebUbuntu Desktop</span>
         </div>
       )}
-      {/* Desktop Icons */}
       {desktopIcons.map((icon) => (
-        <div
-          key={icon.id}
-          className="absolute flex flex-col items-center gap-1 cursor-pointer group"
-          style={{
-            left: icon.position.x,
-            top: icon.position.y,
-            width: 64,
-            opacity: draggingId === icon.id ? 0.5 : 1,
-            animation: 'iconAppear 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-          }}
-          onDoubleClick={() => handleIconDoubleClick(icon)}
-          onMouseDown={(e) => handleIconMouseDown(e, icon)}
-          onContextMenu={(e) => {
-            e.stopPropagation();
-            dispatch({
-              type: 'SHOW_CONTEXT_MENU',
-              x: e.clientX,
-              y: e.clientY,
-              menuType: 'file',
-              items: [
-                { id: 'open', label: 'Open', icon: 'ExternalLink', action: `OPEN_APP:${icon.appId}` },
-                { id: 'div1', label: '', action: '', divider: true },
-                { id: 'cut', label: 'Cut', icon: 'Scissors', action: 'CUT' },
-                { id: 'copy', label: 'Copy', icon: 'Copy', action: 'COPY' },
-                { id: 'rename', label: 'Rename', icon: 'Edit', action: 'RENAME' },
-                { id: 'div2', label: '', action: '', divider: true },
-                { id: 'trash', label: 'Move to Trash', icon: 'Trash2', action: 'TRASH' },
-              ],
-              contextData: { iconId: icon.id },
-            });
-          }}
-        >
-          <div
-            className="w-12 h-12 rounded-lg flex items-center justify-center transition-all"
-            style={{
-              background: icon.isSelected ? 'rgba(124,77,255,0.20)' : 'transparent',
-              border: icon.isSelected ? '1px dashed rgba(124,77,255,0.50)' : '1px solid transparent',
-            }}
-          >
-            <DynamicIcon
-              name={icon.icon}
-              size={32}
-              className="text-[var(--text-primary)] drop-shadow-lg"
-              style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))' }}
-            />
-          </div>
-          <span
-            className="text-[10px] font-medium text-center px-1 py-0.5 rounded max-w-[72px] truncate leading-tight"
-            style={{
-              color: '#E0E0E0',
-              textShadow: '0 1px 3px rgba(0,0,0,0.8)',
-              background: icon.isSelected ? 'rgba(124,77,255,0.30)' : 'transparent',
-            }}
-          >
-            {icon.name}
-          </span>
-        </div>
-      ))}
+  <div
+    key={icon.id}
+    draggable={false}
+    onDragStart={(e) => e.preventDefault()}
+    className="absolute flex flex-col items-center gap-1 cursor-pointer group select-none"
+    style={{
+      left: icon.position.x,
+      top: icon.position.y,
+      width: 64,
+      opacity: draggingId === icon.id ? 0.5 : 1,
+      animation: 'iconAppear 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+    }}
+    onDoubleClick={() => handleIconDoubleClick(icon)}
+    onMouseDown={(e) => handleIconMouseDown(e, icon)}
+    onContextMenu={(e) => {
+      e.stopPropagation();
+
+      dispatch({
+        type: 'SHOW_CONTEXT_MENU',
+        x: e.clientX,
+        y: e.clientY,
+        menuType: 'file',
+        items: [
+          {
+            id: 'open',
+            label: 'Open',
+            icon: 'ExternalLink',
+            action: `OPEN_APP:${icon.appId}`,
+          },
+          {
+            id: 'div1',
+            label: '',
+            action: '',
+            divider: true,
+          },
+          {
+            id: 'cut',
+            label: 'Cut',
+            icon: 'Scissors',
+            action: 'CUT',
+          },
+          {
+            id: 'copy',
+            label: 'Copy',
+            icon: 'Copy',
+            action: 'COPY',
+          },
+          {
+            id: 'rename',
+            label: 'Rename',
+            icon: 'Edit',
+            action: 'RENAME',
+          },
+          {
+            id: 'div2',
+            label: '',
+            action: '',
+            divider: true,
+          },
+          {
+            id: 'trash',
+            label: 'Move to Trash',
+            icon: 'Trash2',
+            action: 'TRASH',
+          },
+        ],
+        contextData: {
+          iconId: icon.id,
+        },
+      });
+    }}
+  >
+    <div
+      className="w-12 h-12 rounded-lg flex items-center justify-center transition-all"
+      style={{
+        background: icon.isSelected
+          ? 'rgba(124,77,255,0.20)'
+          : 'transparent',
+        border: icon.isSelected
+          ? '1px dashed rgba(124,77,255,0.50)'
+          : '1px solid transparent',
+      }}
+    >
+      <DynamicIcon
+        name={icon.icon}
+        size={32}
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        className="text-[var(--text-primary)] drop-shadow-lg select-none pointer-events-none"
+        style={{
+          filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))',
+        }}
+      />
+    </div>
+
+    <span
+      draggable={false}
+      onDragStart={(e) => e.preventDefault()}
+      className="text-[10px] font-medium text-center px-1 py-0.5 rounded max-w-[72px] truncate leading-tight select-none pointer-events-none"
+      style={{
+        color: '#E0E0E0',
+        textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+        background: icon.isSelected
+          ? 'rgba(124,77,255,0.30)'
+          : 'transparent',
+      }}
+    >
+      {icon.name}
+    </span>
+  </div>
+))}
 
       <style>{`
         @keyframes iconAppear {

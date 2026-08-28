@@ -14,6 +14,52 @@ interface HistoryEntry {
   result: string;
 }
 
+// Moved outside to prevent recreation on every render
+const formatNumber = (n: number): string => {
+  if (!isFinite(n)) return 'Error';
+  if (isNaN(n)) return 'Error';
+  const s = String(n);
+  if (s.length > 14) return n.toExponential(9);
+  return s;
+};
+
+const evaluate = (a: number, op: string, b: number): number => {
+  switch (op) {
+    case '+': return a + b;
+    case '-': return a - b;
+    case '*': return a * b;
+    case '/': return b === 0 ? NaN : a / b;
+    case '%': return b === 0 ? NaN : a % b;
+    case '^': return Math.pow(a, b);
+    default: return b;
+  }
+};
+
+// Moved outside to prevent unmounting/remounting on every render (which breaks clicks/focus)
+const Btn: React.FC<{
+  label: React.ReactNode;
+  onClick?: () => void;
+  variant?: 'num' | 'op' | 'action' | 'eq' | 'sci';
+  className?: string;
+  colSpan?: number;
+}> = ({ label, onClick, variant = 'num', className = '', colSpan }) => (
+  <button
+    onClick={onClick}
+    className={
+      `h-12 rounded-md text-sm font-medium transition-all duration-75 active:scale-95 flex items-center justify-center ` +
+      (variant === 'num' ? 'bg-[var(--bg-window)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] ' :
+       variant === 'op' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--accent-primary)] ' :
+       variant === 'action' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] ' :
+       variant === 'eq' ? 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white ' :
+       'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs ') +
+      className
+    }
+    style={colSpan ? { gridColumn: `span ${colSpan}` } : undefined}
+  >
+    {label}
+  </button>
+);
+
 const Calculator: React.FC = () => {
   const [mode, setMode] = useState<CalcMode>('standard');
   const [display, setDisplay] = useState('0');
@@ -38,26 +84,6 @@ const Calculator: React.FC = () => {
     localStorage.setItem('calc_memory', String(memory));
   }, [memory]);
 
-  const formatNumber = (n: number): string => {
-    if (!isFinite(n)) return 'Error';
-    if (isNaN(n)) return 'Error';
-    const s = String(n);
-    if (s.length > 14) return n.toExponential(9);
-    return s;
-  };
-
-  const evaluate = (a: number, op: string, b: number): number => {
-    switch (op) {
-      case '+': return a + b;
-      case '-': return a - b;
-      case '*': return a * b;
-      case '/': return b === 0 ? NaN : a / b;
-      case '%': return b === 0 ? NaN : a % b;
-      case '^': return Math.pow(a, b);
-      default: return b;
-    }
-  };
-
   const calculate = useCallback(() => {
     if (operator === null || operand === null) return;
     const current = parseFloat(display);
@@ -71,25 +97,25 @@ const Calculator: React.FC = () => {
     setWaitingForOperand(true);
   }, [display, operator, operand]);
 
-  const inputDigit = (digit: string) => {
+  const inputDigit = useCallback((digit: string) => {
     if (waitingForOperand) {
       setDisplay(digit);
       setWaitingForOperand(false);
     } else {
-      setDisplay(display === '0' ? digit : display + digit);
+      setDisplay(prev => prev === '0' ? digit : prev + digit);
     }
-  };
+  }, [waitingForOperand]);
 
-  const inputDecimal = () => {
+  const inputDecimal = useCallback(() => {
     if (waitingForOperand) {
       setDisplay('0.');
       setWaitingForOperand(false);
       return;
     }
-    if (!display.includes('.')) setDisplay(display + '.');
-  };
+    setDisplay(prev => prev.includes('.') ? prev : prev + '.');
+  }, [waitingForOperand]);
 
-  const performOp = (op: string) => {
+  const performOp = useCallback((op: string) => {
     const current = parseFloat(display);
     if (operator && !waitingForOperand) {
       const result = evaluate(operand || 0, operator, current);
@@ -101,69 +127,83 @@ const Calculator: React.FC = () => {
     setOperator(op);
     setWaitingForOperand(true);
     setPrevExpr(`${current} ${op}`);
-  };
+  }, [display, operator, waitingForOperand, operand]);
 
-  const clear = () => {
+  const clear = useCallback(() => {
     setDisplay('0');
     setPrevExpr('');
     setOperator(null);
     setOperand(null);
     setWaitingForOperand(false);
-  };
+  }, []);
 
-  const backspace = () => {
+  const backspace = useCallback(() => {
     if (waitingForOperand) return;
-    if (display.length === 1 || (display.length === 2 && display[0] === '-')) {
-      setDisplay('0');
-    } else {
-      setDisplay(display.slice(0, -1));
-    }
-  };
+    setDisplay(prev => {
+      if (prev.length === 1 || (prev.length === 2 && prev[0] === '-')) return '0';
+      return prev.slice(0, -1);
+    });
+  }, [waitingForOperand]);
 
-  const percentage = () => {
-    const v = parseFloat(display);
-    setDisplay(formatNumber(v / 100));
-  };
+  const percentage = useCallback(() => {
+    setDisplay(prev => formatNumber(parseFloat(prev) / 100));
+  }, []);
 
-  const sciFunc = (fn: string) => {
-    const v = parseFloat(display);
-    let result = 0;
-    switch (fn) {
-      case 'sin': result = Math.sin(v); break;
-      case 'cos': result = Math.cos(v); break;
-      case 'tan': result = Math.tan(v); break;
-      case 'log': result = Math.log10(v); break;
-      case 'ln': result = Math.log(v); break;
-      case 'sqrt': result = Math.sqrt(v); break;
-      case 'square': result = v * v; break;
-      case 'cube': result = v * v * v; break;
-      case '1/x': result = 1 / v; break;
-      case 'factorial': result = v < 0 || !Number.isInteger(v) ? NaN : Array.from({ length: Math.floor(v) }, (_, i) => i + 1).reduce((a, b) => a * b, 1); break;
-      case 'abs': result = Math.abs(v); break;
-      case 'pi': setDisplay(String(Math.PI)); setWaitingForOperand(true); return;
-      case 'e': setDisplay(String(Math.E)); setWaitingForOperand(true); return;
-      default: return;
-    }
-    const resultStr = formatNumber(result);
-    setHistory(prev => [{ expr: `${fn}(${v})`, result: resultStr }, ...prev].slice(0, 50));
-    setPrevExpr(`${fn}(${v}) =`);
-    setDisplay(resultStr);
-    setWaitingForOperand(true);
-  };
+  const sciFunc = useCallback((fn: string) => {
+    setDisplay(prevDisplay => {
+      const v = parseFloat(prevDisplay);
+      let result = 0;
+      switch (fn) {
+        case 'sin': result = Math.sin(v); break;
+        case 'cos': result = Math.cos(v); break;
+        case 'tan': result = Math.tan(v); break;
+        case 'log': result = Math.log10(v); break;
+        case 'ln': result = Math.log(v); break;
+        case 'sqrt': result = Math.sqrt(v); break;
+        case 'square': result = v * v; break;
+        case 'cube': result = v * v * v; break;
+        case '1/x': result = 1 / v; break;
+        case 'factorial': result = v < 0 || !Number.isInteger(v) ? NaN : Array.from({ length: Math.floor(v) }, (_, i) => i + 1).reduce((a, b) => a * b, 1); break;
+        case 'abs': result = Math.abs(v); break;
+        case 'pi': 
+          setWaitingForOperand(true); 
+          return String(Math.PI);
+        case 'e': 
+          setWaitingForOperand(true); 
+          return String(Math.E);
+        default: return prevDisplay;
+      }
+      const resultStr = formatNumber(result);
+      setHistory(prev => [{ expr: `${fn}(${v})`, result: resultStr }, ...prev].slice(0, 50));
+      setPrevExpr(`${fn}(${v}) =`);
+      setWaitingForOperand(true);
+      return resultStr;
+    });
+  }, []);
 
-  const memoryAdd = () => setMemory(m => m + parseFloat(display));
-  const memorySubtract = () => setMemory(m => m - parseFloat(display));
-  const memoryClear = () => setMemory(0);
-  const memoryRecall = () => { setDisplay(formatNumber(memory)); setWaitingForOperand(true); };
+  const memoryAdd = useCallback(() => setMemory(m => m + parseFloat(display)), [display]);
+  const memorySubtract = useCallback(() => setMemory(m => m - parseFloat(display)), [display]);
+  const memoryClear = useCallback(() => setMemory(0), []);
+  const memoryRecall = useCallback(() => { 
+    setMemory(m => {
+      setDisplay(formatNumber(m));
+      setWaitingForOperand(true);
+      return m;
+    });
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent default browser actions for calculator keys
+      if (['+', '-', '*', '/', 'Enter', '=', 'Backspace', '%'].includes(e.key)) {
+        e.preventDefault();
+      }
       if (e.key >= '0' && e.key <= '9') inputDigit(e.key);
       else if (e.key === '.') inputDecimal();
       else if (e.key === '+') performOp('+');
       else if (e.key === '-') performOp('-');
       else if (e.key === '*') performOp('*');
-      else if (e.key === '/') { e.preventDefault(); performOp('/'); }
+      else if (e.key === '/') performOp('/');
       else if (e.key === 'Enter' || e.key === '=') calculate();
       else if (e.key === 'Escape') clear();
       else if (e.key === 'Backspace') backspace();
@@ -171,31 +211,7 @@ const Calculator: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [display, waitingForOperand, operator, operand]);
-
-  const Btn: React.FC<{
-    label: React.ReactNode;
-    onClick?: () => void;
-    variant?: 'num' | 'op' | 'action' | 'eq' | 'sci';
-    className?: string;
-    colSpan?: number;
-  }> = ({ label, onClick, variant = 'num', className = '', colSpan }) => (
-    <button
-      onClick={onClick}
-      className={
-        `h-12 rounded-md text-sm font-medium transition-all duration-75 active:scale-95 flex items-center justify-center ` +
-        (variant === 'num' ? 'bg-[var(--bg-window)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] ' :
-         variant === 'op' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--accent-primary)] ' :
-         variant === 'action' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] ' :
-         variant === 'eq' ? 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white ' :
-         'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs ') +
-        className
-      }
-      style={colSpan ? { gridColumn: `span ${colSpan}` } : undefined}
-    >
-      {label}
-    </button>
-  );
+  }, [inputDigit, inputDecimal, performOp, calculate, clear, backspace, percentage]);
 
   return (
     <div className="flex flex-col h-full select-none" style={{ background: 'var(--bg-window)' }}>

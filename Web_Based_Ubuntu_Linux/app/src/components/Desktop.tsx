@@ -129,27 +129,37 @@ const Desktop = memo(function Desktop() {
   );
 
   return (
-    <div
-      ref={desktopRef}
-      className="fixed inset-0 z-10"
-      style={{
-        backgroundImage: `url(${theme.wallpaper})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        top: 28,
-        bottom: 48,
-      }}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onContextMenu={handleDesktopContextMenu}
-      onClick={() => dispatch({ type: 'SELECT_DESKTOP_ICON', id: null })}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsHostDragOver(true);
-      }}
-      onDragLeave={() => setIsHostDragOver(false)}
-      onDrop={handleHostDrop}
-    >
+  <div
+    ref={desktopRef}
+    className="fixed inset-0 z-10"
+    style={{
+      backgroundImage: `url(${theme.wallpaper})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      top: 28,
+      bottom: 48,
+    }}
+    onMouseMove={handleMouseMove}
+    onMouseUp={handleMouseUp}
+    onContextMenu={handleDesktopContextMenu}
+    onClick={() => dispatch({ type: 'SELECT_DESKTOP_ICON', id: null })}
+
+    onDragOver={(e) => {
+      // Ignore drags of text or desktop icons; only react to real files
+      // updated
+      if (!e.dataTransfer.types.includes('Files')) {
+        return;
+      }
+
+      // Only prevent default for actual file drags
+      e.preventDefault();
+      setIsHostDragOver(true);
+    }}
+
+    onDragLeave={() => setIsHostDragOver(false)}
+
+    onDrop={handleHostDrop}
+  >
       {/* Drag and Drop Dropzone Highlight */}
       {isHostDragOver && (
         <div className="absolute inset-4 z-50 border-4 border-dashed border-emerald-400/70 bg-emerald-950/30 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center gap-3 text-emerald-200 pointer-events-none">

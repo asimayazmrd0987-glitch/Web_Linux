@@ -1,0 +1,399 @@
+// ============================================================
+// Calculator — Standard & Scientific modes with history
+// ============================================================
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Delete, History, ChevronLeft,
+} from 'lucide-react';
+
+type CalcMode = 'standard' | 'scientific';
+
+interface HistoryEntry {
+  expr: string;
+  result: string;
+}
+
+// Moved outside to prevent recreation on every render
+const formatNumber = (n: number): string => {
+  if (!isFinite(n)) return 'Error';
+  if (isNaN(n)) return 'Error';
+  const s = String(n);
+  if (s.length > 14) return n.toExponential(9);
+  return s;
+};
+
+const evaluate = (a: number, op: string, b: number): number => {
+  switch (op) {
+    case '+': return a + b;
+    case '-': return a - b;
+    case '*': return a * b;
+    case '/': return b === 0 ? NaN : a / b;
+    case '%': return b === 0 ? NaN : a % b;
+    case '^': return Math.pow(a, b);
+    default: return b;
+  }
+};
+
+// Moved outside to prevent unmounting/remounting on every render (which breaks clicks/focus)
+const Btn: React.FC<{
+  label: React.ReactNode;
+  onClick?: () => void;
+  variant?: 'num' | 'op' | 'action' | 'eq' | 'sci';
+  className?: string;
+  colSpan?: number;
+}> = ({ label, onClick, variant = 'num', className = '', colSpan }) => (
+  <button
+    type="button" // ← ADD THIS (prevents accidental form submission behavior)
+    onMouseDown={(e) => e.stopPropagation()} // ← ADD THIS (stops window manager from hijacking the click)
+    onClick={onClick}
+    className={
+      `h-12 rounded-md text-sm font-medium transition-all duration-75 active:scale-95 flex items-center justify-center ` +
+      (variant === 'num' ? 'bg-[var(--bg-window)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] ' :
+       variant === 'op' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--accent-primary)] ' :
+       variant === 'action' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] ' :
+       variant === 'eq' ? 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white ' :
+       'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs ') +
+      className
+    }
+    style={colSpan ? { gridColumn: `span ${colSpan}` } : undefined}
+  >
+    {label}
+  </button>
+);
+
+const Calculator: React.FC = () => {
+  const [mode, setMode] = useState<CalcMode>('standard');
+  const [display, setDisplay] = useState('0');
+  const [prevExpr, setPrevExpr] = useState('');
+  const [history, setHistory] = useState<HistoryEntry[]>(() => {
+    try { const s = localStorage.getItem('calc_history'); return s ? JSON.parse(s) : []; } catch { return []; }
+  });
+  const [showHistory, setShowHistory] = useState(false);
+  const [memory, setMemory] = useState<number>(() => {
+    try { return Number(localStorage.getItem('calc_memory') || '0'); } catch { return 0; }
+  });
+  const [waitingForOperand, setWaitingForOperand] = useState(false);
+  const [operator, setOperator] = useState<string | null>(null);
+  const [operand, setOperand] = useState<number | null>(null);
+  const historyEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('calc_history', JSON.stringify(history));
+  }, [history]);
+
+  useEffect(() => {
+    localStorage.setItem('calc_memory', String(memory));
+  }, [memory]);
+
+  const calculate = useCallback(() => {
+    if (operator === null || operand === null) return;
+    const current = parseFloat(display);
+    const result = evaluate(operand, operator, current);
+    const resultStr = formatNumber(result);
+    setHistory(prev => [{ expr: `${operand} ${operator} ${current}`, result: resultStr }, ...prev].slice(0, 50));
+    setPrevExpr(`${operand} ${operator} ${current} =`);
+    setDisplay(resultStr);
+    setOperator(null);
+    setOperand(null);
+    setWaitingForOperand(true);
+  }, [display, operator, operand]);
+
+  const inputDigit = useCallback((digit: string) => {
+    if (waitingForOperand) {
+      setDisplay(digit);
+      setWaitingForOperand(false);
+    } else {
+      setDisplay(prev => prev === '0' ? digit : prev + digit);
+    }
+  }, [waitingForOperand]);
+
+  const inputDecimal = useCallback(() => {
+    if (waitingForOperand) {
+      setDisplay('0.');
+      setWaitingForOperand(false);
+      return;
+    }
+    setDisplay(prev => {
+      if (!prev.includes('.')) return prev + '.';
+      return prev;
+    });
+  }, [waitingForOperand]);
+
+  const performOp = useCallback((op: string) => {
+    setDisplay(prevDisplay => {
+      const current = parseFloat(prevDisplay);
+      setPrevExpr(`${current} ${op}`);
+      setWaitingForOperand(true);
+      
+      setOperand(prevOperand => {
+        if (operator && !waitingForOperand) {
+          const result = evaluate(prevOperand || 0, operator, current);
+          setDisplay(formatNumber(result));
+          return result;
+        }
+        return current;
+      });
+      setOperator(op);
+      return prevDisplay;
+    });
+  }, [operator, waitingForOperand]);
+
+  const clear = useCallback(() => {
+    setDisplay('0');
+    setPrevExpr('');
+    setOperator(null);
+    setOperand(null);
+    setWaitingForOperand(false);
+  }, []);
+
+  const backspace = useCallback(() => {
+    if (waitingForOperand) return;
+    setDisplay(prev => {
+      if (prev.length === 1 || (prev.length === 2 && prev[0] === '-')) return '0';
+      return prev.slice(0, -1);
+    });
+  }, [waitingForOperand]);
+
+  const percentage = useCallback(() => {
+    setDisplay(prev => formatNumber(parseFloat(prev) / 100));
+  }, []);
+
+  const sciFunc = useCallback((fn: string) => {
+    setDisplay(prevDisplay => {
+      const v = parseFloat(prevDisplay);
+      let result = 0;
+      switch (fn) {
+        case 'sin': result = Math.sin(v); break;
+        case 'cos': result = Math.cos(v); break;
+        case 'tan': result = Math.tan(v); break;
+        case 'log': result = Math.log10(v); break;
+        case 'ln': result = Math.log(v); break;
+        case 'sqrt': result = Math.sqrt(v); break;
+        case 'square': result = v * v; break;
+        case 'cube': result = v * v * v; break;
+        case '1/x': result = 1 / v; break;
+        case 'factorial': result = v < 0 || !Number.isInteger(v) ? NaN : Array.from({ length: Math.floor(v) }, (_, i) => i + 1).reduce((a, b) => a * b, 1); break;
+        case 'abs': result = Math.abs(v); break;
+        case 'pi': 
+          setWaitingForOperand(true); 
+          return String(Math.PI);
+        case 'e': 
+          setWaitingForOperand(true); 
+          return String(Math.E);
+        default: return prevDisplay;
+      }
+      const resultStr = formatNumber(result);
+      setHistory(prev => [{ expr: `${fn}(${v})`, result: resultStr }, ...prev].slice(0, 50));
+      setPrevExpr(`${fn}(${v}) =`);
+      setWaitingForOperand(true);
+      return resultStr;
+    });
+  }, []);
+
+  const memoryAdd = useCallback(() => setMemory(m => m + parseFloat(display)), [display]);
+  const memorySubtract = useCallback(() => setMemory(m => m - parseFloat(display)), [display]);
+  const memoryClear = useCallback(() => setMemory(0), []);
+  const memoryRecall = useCallback(() => { 
+    setMemory(m => {
+      setDisplay(formatNumber(m));
+      setWaitingForOperand(true);
+      return m;
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent default browser actions for calculator keys
+      if (['+', '-', '*', '/', 'Enter', '=', 'Backspace', '%'].includes(e.key)) {
+        e.preventDefault();
+      }
+      if (e.key >= '0' && e.key <= '9') inputDigit(e.key);
+      else if (e.key === '.') inputDecimal();
+      else if (e.key === '+') performOp('+');
+      else if (e.key === '-') performOp('-');
+      else if (e.key === '*') performOp('*');
+      else if (e.key === '/') performOp('/');
+      else if (e.key === 'Enter' || e.key === '=') calculate();
+      else if (e.key === 'Escape') clear();
+      else if (e.key === 'Backspace') backspace();
+      else if (e.key === '%') percentage();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inputDigit, inputDecimal, performOp, calculate, clear, backspace, percentage]);
+
+  const Btn: React.FC<{
+    label: React.ReactNode;
+    onClick?: () => void;
+    variant?: 'num' | 'op' | 'action' | 'eq' | 'sci';
+    className?: string;
+    colSpan?: number;
+  }> = ({ label, onClick, variant = 'num', className = '', colSpan }) => (
+    <button
+      onClick={onClick}
+      className={
+        `h-12 rounded-md text-sm font-medium transition-all duration-75 active:scale-95 flex items-center justify-center ` +
+        (variant === 'num' ? 'bg-[var(--bg-window)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] ' :
+         variant === 'op' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--accent-primary)] ' :
+         variant === 'action' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] ' :
+         variant === 'eq' ? 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white ' :
+         'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs ') +
+        className
+      }
+      style={colSpan ? { gridColumn: `span ${colSpan}` } : undefined}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="flex flex-col h-full select-none" style={{ background: 'var(--bg-window)' }}>
+      {/* Mode toggle */}
+      <div className="flex items-center justify-between px-3 h-9 border-b" style={{ borderColor: 'var(--border-subtle)', background: 'var(--bg-titlebar)' }}>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setMode('standard')}
+            className={`text-xs px-2 py-1 rounded ${mode === 'standard' ? 'text-[var(--accent-primary)] font-semibold' : 'text-[var(--text-secondary)]'}`}
+          >
+            Standard
+          </button>
+          <button
+            onClick={() => setMode('scientific')}
+            className={`text-xs px-2 py-1 rounded ${mode === 'scientific' ? 'text-[var(--accent-primary)] font-semibold' : 'text-[var(--text-secondary)]'}`}
+          >
+            Scientific
+          </button>
+        </div>
+        <button onClick={() => setShowHistory(!showHistory)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+          <History size={16} />
+        </button>
+      </div>
+
+      {/* Display */}
+      <div className="flex flex-col items-end justify-center px-4 py-3" style={{ minHeight: 80 }}>
+        <div className="text-xs text-[var(--text-secondary)] truncate w-full text-right" style={{ minHeight: 16 }}>
+          {prevExpr}
+        </div>
+        <div
+          className="font-light text-right w-full truncate"
+          style={{ fontSize: display.length > 12 ? 24 : 32, color: display === 'Error' ? 'var(--accent-error)' : 'var(--text-primary)' }}
+        >
+          {display}
+        </div>
+        {memory !== 0 && <div className="text-[10px] text-[var(--accent-primary)]">M</div>}
+      </div>
+
+      {/* History panel */}
+      {showHistory && (
+        <div className="flex-1 overflow-auto custom-scrollbar px-3 py-2 border-t" style={{ borderColor: 'var(--border-subtle)', maxHeight: 120 }}>
+          {history.length === 0 ? (
+            <div className="text-xs text-[var(--text-disabled)] text-center py-2">No history yet</div>
+          ) : (
+            <>
+              {history.map((h, i) => (
+                <button
+                  key={i}
+                  onClick={() => { setDisplay(h.result); setWaitingForOperand(true); }}
+                  className="w-full text-right py-1 px-2 rounded hover:bg-[var(--bg-hover)] transition-colors"
+                >
+                  <div className="text-[10px] text-[var(--text-secondary)]">{h.expr}</div>
+                  <div className="text-sm text-[var(--text-primary)]">{h.result}</div>
+                </button>
+              ))}
+              <div ref={historyEndRef} />
+              <button onClick={() => setHistory([])} className="w-full text-center text-xs text-[var(--accent-error)] py-1 hover:underline">
+                Clear History
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Buttons */}
+      <div className="flex-1 p-1.5">
+        {mode === 'standard' ? (
+          <div className="grid grid-cols-4 gap-1 h-full">
+            <Btn label="AC" onClick={clear} variant="action" />
+            <Btn label={<ChevronLeft size={16} />} onClick={backspace} variant="action" />
+            <Btn label="%" onClick={percentage} variant="action" />
+            <Btn label="÷" onClick={() => performOp('/')} variant="op" />
+            <Btn label="7" onClick={() => inputDigit('7')} />
+            <Btn label="8" onClick={() => inputDigit('8')} />
+            <Btn label="9" onClick={() => inputDigit('9')} />
+            <Btn label="×" onClick={() => performOp('*')} variant="op" />
+            <Btn label="4" onClick={() => inputDigit('4')} />
+            <Btn label="5" onClick={() => inputDigit('5')} />
+            <Btn label="6" onClick={() => inputDigit('6')} />
+            <Btn label="−" onClick={() => performOp('-')} variant="op" />
+            <Btn label="1" onClick={() => inputDigit('1')} />
+            <Btn label="2" onClick={() => inputDigit('2')} />
+            <Btn label="3" onClick={() => inputDigit('3')} />
+            <Btn label="+" onClick={() => performOp('+')} variant="op" />
+            <Btn label="0" onClick={() => inputDigit('0')} colSpan={2} />
+            <Btn label="." onClick={inputDecimal} />
+            <Btn label="=" onClick={calculate} variant="eq" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-5 gap-1 h-full">
+            {/* Row 1: Memory + scientific */}
+            <Btn label="MC" onClick={memoryClear} variant="sci" />
+            <Btn label="MR" onClick={memoryRecall} variant="sci" />
+            <Btn label="M+" onClick={memoryAdd} variant="sci" />
+            <Btn label="M−" onClick={memorySubtract} variant="sci" />
+            <Btn label={<Delete size={14} />} onClick={backspace} variant="action" />
+
+            {/* Row 2 */}
+            <Btn label="sin" onClick={() => sciFunc('sin')} variant="sci" />
+            <Btn label="cos" onClick={() => sciFunc('cos')} variant="sci" />
+            <Btn label="tan" onClick={() => sciFunc('tan')} variant="sci" />
+            <Btn label="(" onClick={() => inputDigit('(')} variant="sci" />
+            <Btn label=")" onClick={() => inputDigit(')')} variant="sci" />
+
+            {/* Row 3 */}
+            <Btn label="x²" onClick={() => sciFunc('square')} variant="sci" />
+            <Btn label="x³" onClick={() => sciFunc('cube')} variant="sci" />
+            <Btn label="xʸ" onClick={() => performOp('^')} variant="sci" />
+            <Btn label="AC" onClick={clear} variant="action" />
+            <Btn label="÷" onClick={() => performOp('/')} variant="op" />
+
+            {/* Row 4 */}
+            <Btn label="√" onClick={() => sciFunc('sqrt')} variant="sci" />
+            <Btn label="log" onClick={() => sciFunc('log')} variant="sci" />
+            <Btn label="ln" onClick={() => sciFunc('ln')} variant="sci" />
+            <Btn label="%" onClick={percentage} variant="sci" />
+            <Btn label="×" onClick={() => performOp('*')} variant="op" />
+
+            {/* Row 5 */}
+            <Btn label="7" onClick={() => inputDigit('7')} />
+            <Btn label="8" onClick={() => inputDigit('8')} />
+            <Btn label="9" onClick={() => inputDigit('9')} />
+            <Btn label="1/x" onClick={() => sciFunc('1/x')} variant="sci" />
+            <Btn label="−" onClick={() => performOp('-')} variant="op" />
+
+            {/* Row 6 */}
+            <Btn label="4" onClick={() => inputDigit('4')} />
+            <Btn label="5" onClick={() => inputDigit('5')} />
+            <Btn label="6" onClick={() => inputDigit('6')} />
+            <Btn label="n!" onClick={() => sciFunc('factorial')} variant="sci" />
+            <Btn label="+" onClick={() => performOp('+')} variant="op" />
+
+            {/* Row 7 */}
+            <Btn label="1" onClick={() => inputDigit('1')} />
+            <Btn label="2" onClick={() => inputDigit('2')} />
+            <Btn label="3" onClick={() => inputDigit('3')} />
+            <Btn label="π" onClick={() => sciFunc('pi')} variant="sci" />
+            <Btn label="=" onClick={calculate} variant="eq" colSpan={1} className="row-span-2 h-full" />
+
+            {/* Row 8 */}
+            <Btn label="0" onClick={() => inputDigit('0')} colSpan={2} />
+            <Btn label="." onClick={inputDecimal} />
+            <Btn label="e" onClick={() => sciFunc('e')} variant="sci" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Calculator;

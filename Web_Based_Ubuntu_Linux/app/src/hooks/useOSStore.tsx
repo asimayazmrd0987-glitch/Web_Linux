@@ -332,11 +332,22 @@ function osReducer(state: OSState, action: OSAction): OSState {
     }
 
     case 'UPDATE_DESKTOP_ICON_POSITION': {
-      const next = state.desktopIcons.map((i) =>
-        i.id === action.id ? { ...i, position: action.position } : i
+      const { id, position } = action;
+      const currentIcons = state.desktopIcons;
+
+      const isOccupied = currentIcons.some(
+        (icon) =>
+          icon.id !== id &&
+          icon.position.x === position.x &&
+          icon.position.y === position.y
       );
-      localStorage.setItem('ubuntuos_desktop_icons', JSON.stringify(next));
-      return { ...state, desktopIcons: next };
+
+      return {
+        ...state,
+        desktopIcons: currentIcons.map((icon) =>
+          icon.id === id && !isOccupied ? { ...icon, position } : icon
+        ),
+      };
     }
 
     case 'SELECT_DESKTOP_ICON': {

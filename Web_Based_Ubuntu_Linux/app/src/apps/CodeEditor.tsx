@@ -307,6 +307,37 @@ export default function CodeEditor() {
     return highlightCode(activeTab.content, activeTab.language);
   }, [activeTab]);
 
+  const [runnerOutput, setRunnerOutput] = useState<string | null>(null);
+  const [htmlPreviewUrl, setHtmlPreviewUrl] = useState<string | null>(null);
+
+  const runCode = useCallback(() => {
+    if (!activeTab) return;
+    setRunnerOutput(null);
+    setHtmlPreviewUrl(null);
+
+    if (activeTab.language === 'javascript' || activeTab.language === 'typescript') {
+      try {
+        const logs: string[] = [];
+        const customConsole = {
+          log: (...args: unknown[]) => logs.push(args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ')),
+          error: (...args: unknown[]) => logs.push('[ERROR] ' + args.join(' ')),
+          warn: (...args: unknown[]) => logs.push('[WARN] ' + args.join(' ')),
+        };
+        // eslint-disable-next-line no-new-func
+        const fn = new Function('console', activeTab.content);
+        fn(customConsole);
+        setRunnerOutput(logs.join('\n') || 'Executed successfully with no console output.');
+      } catch (err) {
+        setRunnerOutput(`Execution Error: ${err}`);
+      }
+    } else if (activeTab.language === 'html') {
+      const blob = new Blob([activeTab.content], { type: 'text/html' });
+      setHtmlPreviewUrl(URL.createObjectURL(blob));
+    } else {
+      setRunnerOutput(`Live runner supported for JavaScript and HTML. File language: ${activeTab.language}`);
+    }
+  }, [activeTab]);
+
   return (
     <div className="h-full flex flex-col" style={{ background: 'var(--bg-window)' }}>
       {/* Menu Bar */}
@@ -323,6 +354,11 @@ export default function CodeEditor() {
         <button onClick={saveFile} className="flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--bg-hover)] transition-colors" title="Save (Ctrl+S)">
           <Save size={14} /><span className="text-xs">Save</span>
         </button>
+        {activeTab && (
+          <button onClick={runCode} className="flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors ml-2" title="Run Code">
+            <span>▶</span> Run Code
+          </button>
+        )}
         <div className="ml-auto flex items-center gap-2">
           {activeTab && (
             <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--bg-hover)' }}>
@@ -436,6 +472,27 @@ export default function CodeEditor() {
                   />
                 </div>
               </div>
+
+              {/* Runner Output Console or HTML Preview */}
+              {runnerOutput !== null && (
+                <div className="h-36 shrink-0 border-t flex flex-col font-mono text-xs" style={{ background: '#0F0F12', borderColor: 'var(--border-subtle)' }}>
+                  <div className="flex items-center justify-between px-3 py-1 bg-[#1A1A20] text-slate-300 font-sans font-semibold text-[11px]">
+                    <span>OUTPUT CONSOLE</span>
+                    <button onClick={() => setRunnerOutput(null)} className="text-slate-400 hover:text-white">✕</button>
+                  </div>
+                  <pre className="flex-1 p-3 overflow-y-auto text-emerald-400 whitespace-pre-wrap">{runnerOutput}</pre>
+                </div>
+              )}
+
+              {htmlPreviewUrl !== null && (
+                <div className="h-64 shrink-0 border-t flex flex-col" style={{ background: '#FFFFFF', borderColor: 'var(--border-subtle)' }}>
+                  <div className="flex items-center justify-between px-3 py-1 bg-[#1A1A20] text-white font-sans font-semibold text-[11px]">
+                    <span>LIVE HTML PREVIEW</span>
+                    <button onClick={() => setHtmlPreviewUrl(null)} className="text-slate-400 hover:text-white">✕</button>
+                  </div>
+                  <iframe src={htmlPreviewUrl} className="flex-1 w-full h-full border-none" title="HTML Preview" />
+                </div>
+              )}
 
               {/* Status Bar */}
               <div className="flex items-center justify-between px-3 py-0.5 shrink-0" style={{ background: 'var(--bg-titlebar)', borderTop: '1px solid var(--border-subtle)' }}>

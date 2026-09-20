@@ -107,6 +107,8 @@ const WindowFrame = memo(function WindowFrame({ window: win, children }: WindowF
     return cursors[edge] || 'default';
   }, [isMaximized, getEdge]);
 
+  const [snapPreview, setSnapPreview] = useState<'left' | 'right' | 'top' | null>(null);
+
   // ---- Global mouse events for drag/resize ----
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -118,6 +120,18 @@ const WindowFrame = memo(function WindowFrame({ window: win, children }: WindowF
         const vw = window.innerWidth;
         ny = Math.max(TOP_PANEL_HEIGHT, ny);
         nx = Math.min(Math.max(nx, -(win.size.width - 100)), vw - 100);
+
+        // Detect Snapping bounds
+        if (e.clientX < 25) {
+          setSnapPreview('left');
+        } else if (e.clientX > vw - 25) {
+          setSnapPreview('right');
+        } else if (e.clientY < TOP_PANEL_HEIGHT + 15) {
+          setSnapPreview('top');
+        } else {
+          setSnapPreview(null);
+        }
+
         dispatch({ type: 'MOVE_WINDOW', windowId: win.id, position: { x: nx, y: ny } });
       }
       if (resizeRef.current?.isResizing) {
@@ -140,11 +154,31 @@ const WindowFrame = memo(function WindowFrame({ window: win, children }: WindowF
         dispatch({ type: 'RESIZE_WINDOW', windowId: win.id, size: { width: nw, height: nh } });
       }
     };
-    const onUp = () => {
+    const onUp = (e: MouseEvent) => {
+      if (dragRef.current?.isDragging) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const usableH = vh - TOP_PANEL_HEIGHT - 48;
+
+        if (e.clientX < 25) {
+          // Snap Left
+          dispatch({ type: 'MOVE_WINDOW', windowId: win.id, position: { x: 0, y: TOP_PANEL_HEIGHT } });
+          dispatch({ type: 'RESIZE_WINDOW', windowId: win.id, size: { width: Math.floor(vw / 2), height: usableH } });
+        } else if (e.clientX > vw - 25) {
+          // Snap Right
+          dispatch({ type: 'MOVE_WINDOW', windowId: win.id, position: { x: Math.floor(vw / 2), y: TOP_PANEL_HEIGHT } });
+          dispatch({ type: 'RESIZE_WINDOW', windowId: win.id, size: { width: Math.floor(vw / 2), height: usableH } });
+        } else if (e.clientY < TOP_PANEL_HEIGHT + 15) {
+          // Snap Maximize
+          dispatch({ type: 'MAXIMIZE_WINDOW', windowId: win.id });
+        }
+      }
+
       dragRef.current = null;
       resizeRef.current = null;
       setIsDragging(false);
       setIsResizing(false);
+      setSnapPreview(null);
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -341,6 +375,36 @@ const WindowFrame = memo(function WindowFrame({ window: win, children }: WindowF
             onMouseDown={handleResizeMouseDown}
           />
         </div>
+      )}
+
+      {/* Snap Preview Overlay */}
+      {snapPreview && (
+        <div
+          className="fixed z-[9999] pointer-events-none transition-all duration-150 rounded-xl"
+          style={{
+            background: 'rgba(124, 77, 255, 0.25)',
+            border: '2px dashed rgba(124, 77, 255, 0.6)',
+            boxShadow: '0 0 30px rgba(124, 77, 255, 0.3)',
+            ...(snapPreview === 'left' && {
+              left: 0,
+              top: TOP_PANEL_HEIGHT,
+              width: '50vw',
+              height: 'calc(100vh - 76px)',
+            }),
+            ...(snapPreview === 'right' && {
+              right: 0,
+              top: TOP_PANEL_HEIGHT,
+              width: '50vw',
+              height: 'calc(100vh - 76px)',
+            }),
+            ...(snapPreview === 'top' && {
+              left: 0,
+              right: 0,
+              top: TOP_PANEL_HEIGHT,
+              height: 'calc(100vh - 76px)',
+            }),
+          }}
+        />
       )}
     </div>
   );

@@ -1,7 +1,3 @@
-// ============================================================
-// Terminal — Real Interactive Linux Terminal & Git Environment
-// ============================================================
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useFileSystem } from '@/hooks/useFileSystem';
 

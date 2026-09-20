@@ -319,11 +319,6 @@ const COMMANDS: Record<string, (args: string[], ctx: TerminalContext) => string 
     '  gp=\x1b[33mgit push\x1b[0m',
     '  ..=\x1b[33mcd ..\x1b[0m',
   ],
-
-  clear: (_args, ctx) => {
-    ctx.clear();
-    return '';
-  },
 };
 
 interface TerminalContext {

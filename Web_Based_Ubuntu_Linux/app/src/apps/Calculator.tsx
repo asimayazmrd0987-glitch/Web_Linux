@@ -71,37 +71,45 @@ const Calculator: React.FC = () => {
     setWaitingForOperand(true);
   }, [display, operator, operand]);
 
-  const inputDigit = (digit: string) => {
+  const inputDigit = useCallback((digit: string) => {
     if (waitingForOperand) {
       setDisplay(digit);
       setWaitingForOperand(false);
     } else {
-      setDisplay(display === '0' ? digit : display + digit);
+      setDisplay(prev => prev === '0' ? digit : prev + digit);
     }
-  };
+  }, [waitingForOperand]);
 
-  const inputDecimal = () => {
+  const inputDecimal = useCallback(() => {
     if (waitingForOperand) {
       setDisplay('0.');
       setWaitingForOperand(false);
       return;
     }
-    if (!display.includes('.')) setDisplay(display + '.');
-  };
+    setDisplay(prev => {
+      if (!prev.includes('.')) return prev + '.';
+      return prev;
+    });
+  }, [waitingForOperand]);
 
-  const performOp = (op: string) => {
-    const current = parseFloat(display);
-    if (operator && !waitingForOperand) {
-      const result = evaluate(operand || 0, operator, current);
-      setDisplay(formatNumber(result));
-      setOperand(result);
-    } else {
-      setOperand(current);
-    }
-    setOperator(op);
-    setWaitingForOperand(true);
-    setPrevExpr(`${current} ${op}`);
-  };
+  const performOp = useCallback((op: string) => {
+    setDisplay(prevDisplay => {
+      const current = parseFloat(prevDisplay);
+      setPrevExpr(`${current} ${op}`);
+      setWaitingForOperand(true);
+      
+      setOperand(prevOperand => {
+        if (operator && !waitingForOperand) {
+          const result = evaluate(prevOperand || 0, operator, current);
+          setDisplay(formatNumber(result));
+          return result;
+        }
+        return current;
+      });
+      setOperator(op);
+      return prevDisplay;
+    });
+  }, [operator, waitingForOperand]);
 
   const clear = () => {
     setDisplay('0');
@@ -171,7 +179,7 @@ const Calculator: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [display, waitingForOperand, operator, operand]);
+  }, [inputDigit, inputDecimal, performOp, calculate, clear, backspace, percentage]);
 
   const Btn: React.FC<{
     label: React.ReactNode;

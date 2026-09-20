@@ -151,7 +151,7 @@ const AppLauncher = memo(function AppLauncher() {
       {/* Category tabs */}
       {!searchQuery && (
         <div
-          className="flex items-center gap-0 mt-6 overflow-x-auto max-w-[90vw]"
+          className="flex items-center gap-0 mt-6 overflow-x-auto max-w-[90vw] custom-scrollbar"
           style={{ animation: 'searchSlideDown 300ms ease 250ms both' }}
         >
           {CATEGORIES.map((cat) => (
@@ -172,7 +172,7 @@ const AppLauncher = memo(function AppLauncher() {
 
       {/* App grid */}
       <div
-        className="mt-6 w-[720px] max-w-[90vw] overflow-y-auto"
+        className="mt-6 w-[720px] max-w-[90vw] overflow-y-auto custom-scrollbar"
         style={{
           maxHeight: 'calc(100vh - 220px)',
           display: 'grid',

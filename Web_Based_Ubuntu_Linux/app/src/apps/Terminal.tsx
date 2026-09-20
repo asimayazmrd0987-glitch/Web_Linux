@@ -42,14 +42,256 @@ function parseArgsAndEnv(cmdLine: string, env: Record<string, string>): string[]
     } else {
       current += char;
     }
-  }
-  if (current.length > 0) tokens.push(current);
+    const newPath = '/' + currentParts.join('/');
+    const node = ctx.findNodeByPath(newPath);
+    if (!node) return `cd: no such file or directory: ${target}`;
+    if (node.type !== 'folder') return `cd: not a directory: ${target}`;
+    ctx.setCurrentPath(newPath);
+    return '';
+  },
 
-  // Expand environment variables like $USER or $HOME
-  return tokens.map((token) => {
-    if (inSingleQuote) return token;
-    return token.replace(/\$([A-Za-z0-9_]+)/g, (_, varName) => env[varName] || '');
-  });
+  pwd: (_args, ctx) => ctx.currentPath,
+
+  mkdir: (args, ctx) => {
+    if (!args[0]) return 'mkdir: missing operand';
+    const currentNode = ctx.findNodeByPath(ctx.currentPath);
+    if (!currentNode) return 'mkdir: cannot create directory';
+    ctx.createFolder(currentNode.id, args[0]);
+    return '';
+  },
+
+  touch: (args, ctx) => {
+    if (!args[0]) return 'touch: missing file operand';
+    const currentNode = ctx.findNodeByPath(ctx.currentPath);
+    if (!currentNode) return 'touch: cannot create file';
+    ctx.createFile(currentNode.id, args[0]);
+    return '';
+  },
+
+  rm: (args, ctx) => {
+    if (!args[0]) return 'rm: missing operand';
+    const currentNode = ctx.findNodeByPath(ctx.currentPath);
+    if (!currentNode) return 'rm: cannot remove';
+    const children = ctx.getChildren(currentNode.id);
+    const target = children.find((c) => c.name === args[0]);
+    if (!target) return `rm: cannot remove '${args[0]}': No such file or directory`;
+    ctx.deleteNode(target.id);
+    return '';
+  },
+
+  cat: (args, ctx) => {
+    if (!args[0]) return 'cat: missing file operand';
+    const currentNode = ctx.findNodeByPath(ctx.currentPath);
+    if (!currentNode) return 'cat: cannot read file';
+    const children = ctx.getChildren(currentNode.id);
+    const target = children.find((c) => c.name === args[0]);
+    if (!target) return `cat: '${args[0]}': No such file or directory`;
+    if (target.type === 'folder') return `cat: '${args[0]}': Is a directory`;
+    const content = ctx.readFile(target.id);
+    return content || '';
+  },
+
+  echo: (args) => args.join(' '),
+
+  clear: (_args, ctx) => {
+    ctx.clear();
+    return '';
+  },
+
+  whoami: () => 'user',
+
+  date: () => new Date().toString(),
+
+  uname: () => 'UbuntuOS Web 1.0.0-generic x86_64',
+
+  neofetch: () => [
+    '\x1b[35m       _    _  _   _  ____   ___  ____   _____ \x1b[0m',
+    '\x1b[35m      / \\  | || | / \\|  _ \\ / _ \\|  _ \\ / ____|\x1b[0m',
+    '\x1b[35m     / _ \\ | || |/ _ \\ | | | | | | |_) | (___  \x1b[0m',
+    '\x1b[35m    / ___ \\|__   _/ ___ \\| |_| |  _ < \\___ \\ \x1b[0m',
+    '\x1b[35m   /_/   \\_\\_| |_/_/   \\_\\____/|_| \\_\\____/ \x1b[0m',
+    '',
+    '\x1b[36mOS:\x1b[0m UbuntuOS Web 1.0.0',
+    '\x1b[36mKernel:\x1b[0m browser-engine-20.0',
+    '\x1b[36mShell:\x1b[0m ubuntushell 1.0',
+    '\x1b[36mDE:\x1b[0m GNOME-like Web Desktop',
+    '\x1b[36mTheme:\x1b[0m Adwaita-dark [GTK2/3]',
+    '\x1b[36mIcons:\x1b[0m Ubuntu-mono-dark [GTK2/3]',
+    '\x1b[36mTerminal:\x1b[0m ubuntuterminal',
+    '\x1b[36mCPU:\x1b[0m Virtual Web Core',
+    '\x1b[36mMemory:\x1b[0m Browser Allocated',
+  ],
+
+  calc: (args) => {
+    if (!args.length) return 'calc: missing expression';
+    const expr = args.join('');
+    try {
+      // Safe evaluation - only allow numbers and basic operators
+      const sanitized = expr.replace(/[^0-9+\-*/().\s]/g, '');
+      if (sanitized !== expr) return 'calc: invalid characters in expression';
+      // eslint-disable-next-line no-new-func
+      const result = new Function('return ' + sanitized)();
+      return String(result);
+    } catch {
+      return 'calc: invalid expression';
+    }
+  },
+
+  history: (_args, ctx) => {
+    return ctx.history.map((cmd, i) => `\x1b[90m${i + 1}\x1b[0m  ${cmd}`);
+  },
+
+  git: (args, ctx) => {
+    if (!args.length) return 'git: usage: git <command> [<args>]';
+    const cmd = args[0].toLowerCase();
+    const gitCmds: Record<string, () => string | string[]> = {
+      status: () => [
+        '\x1b[32mOn branch main\x1b[0m',
+        'Your branch is up to date with \'origin/main\'.',
+        '',
+        '\x1b[36mChanges not staged for commit:\x1b[0m',
+        '  (use "git add <file>..." to update what will be committed)',
+        '  (use "git restore <file>..." to discard changes in working directory)',
+        '\x1b[31m\tmodified:   src/apps/Terminal.tsx\x1b[0m',
+        '',
+        'no changes added to commit (use "git add" and/or "git commit -a")',
+      ],
+      log: () => [
+        '\x1b[33mcommit abc123def456\x1b[0m (HEAD -> main)',
+        'Author: user <user@weblinux.local>',
+        'Date:   ' + new Date().toUTCString(),
+        '',
+        '    Enhanced terminal with Oh My Zsh style',
+      ],
+      pull: () => ['Already up to date.'],
+      push: () => ['Everything up-to-date'],
+      add: () => [''],
+      commit: () => ['[main abc123] Enhanced terminal'],
+      branch: () => ['* main'],
+      clone: () => ['Cloning...', 'Done!'],
+    };
+    if (gitCmds[cmd]) return gitCmds[cmd]();
+    return `git: '${cmd}' is not a git command. See 'git --help'.`;
+  },
+
+  vim: (args) => {
+    if (!args[0]) return 'vim: Too few arguments. Usage: vim [file...]';
+    return [
+      '\x1b[34mVIM - Vi IMproved\x1b[0m',
+      '',
+      '  ~',
+      '  ~',
+      '  \x1b[36m"' + args[0] + '" \x1b[0m[New File]',
+      '  ~',
+      '  \x1b[90m-- INSERT --\x1b[0m',
+      '',
+      '\x1b[90mSimulated editor. Use Ctrl+C to exit.\x1b[0m',
+    ];
+  },
+
+  nano: (args) => {
+    if (!args[0]) return 'nano: Too few arguments. Usage: nano [file...]';
+    return [
+      '\x1b[32mGNU nano\x1b[0m',
+      '',
+      '  \x1b[36mFile: ' + args[0] + '\x1b[0m',
+      '',
+      '  [ File content would appear here ]',
+      '',
+      '\x1b[33m^G Help\x1b[0m  \x1b[33m^O Write Out\x1b[0m  \x1b[33m^X Exit\x1b[0m',
+    ];
+  },
+
+  htop: () => {
+    const now = new Date();
+    return [
+      '  \x1b[32mCPU\x1b[0m [\x1b[32m██████████\x1b[0m\x1b[90m..........\x1b[0m] 45.2%',
+      '  \x1b[34mMem\x1b[0m [\x1b[34m████████\x1b[0m\x1b[90m............\x1b[0m] 2.4G/8G',
+      '  \x1b[33mSwp\x1b[0m [\x1b[90m....................\x1b[0m] 0K/4G',
+      '',
+      '  \x1b[1mPID USER\x1b[0m      \x1b[1mPRI NI  VIRT RES S\x1b[0m   \x1b[1mCPU% MEM% TIME+  Command\x1b[0m',
+      '    1 root       20  0  1.2G 85M S  2.3  1.1  0:15.23 \x1b[36msystemd\x1b[0m',
+      '  234 user       20  0  456M 120M S  5.7  1.5  0:08.45 \x1b[32mbrowser\x1b[0m',
+      '  567 user       20  0  234M 45M R  1.2  0.6  0:02.12 \x1b[33mwebterm\x1b[0m',
+      '',
+      '\x1b[90mPress q to quit (simulated)\x1b[0m',
+    ];
+  },
+
+  figlet: (args) => {
+    if (!args.length) return 'Usage: figlet <text>';
+    const text = args.join(' ');
+    const banners: Record<string, string[]> = {
+      default: [
+        ' _____ _   _ _____ ',
+        '| ____| \ | | ____|',
+        '|  _| |  \| |  _|  ',
+        '| |___| |\  | |___ ',
+        '|_____|_| \_|_____|',
+      ],
+    };
+    // Simple ASCII art generator
+    const lines = text.toUpperCase().split('').map(char => {
+      const charMap: Record<string, string[]> = {
+        'H': ['H   H', 'H   H', 'HHHHH', 'H   H', 'H   H'],
+        'I': ['III', ' I ', ' I ', ' I ', 'III'],
+        '!': ['!', '!', '!', ' ', '!'],
+        ' ': ['     ', '     ', '     ', '     ', '     '],
+      };
+      return charMap[char] || charMap['I'];
+    });
+    
+    const result: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      result.push(lines.map(line => line[i]).join('  '));
+    }
+    return result.map(l => '\x1b[35m' + l + '\x1b[0m');
+  },
+
+  cowsay: (args) => {
+    if (!args.length) return 'Usage: cowsay <message>';
+    const msg = args.join(' ');
+    const border = '_'.repeat(msg.length + 2);
+    return [
+      ` ${border}`,
+      `< ${msg} >`,
+      ` ${'-'.repeat(msg.length + 2)}`,
+      '        \\   ^__^',
+      '         \\  (oo)\\_______',
+      '            (__)\\       )\\/\\',
+      '                ||----w |',
+      '                ||     ||',
+    ].map(l => '\x1b[33m' + l + '\x1b[0m');
+  },
+
+  lolcat: (args) => {
+    if (!args.length) return 'Usage: lolcat <text>';
+    const msg = args.join(' ');
+    const colors = ['\x1b[31m', '\x1b[33m', '\x1b[32m', '\x1b[36m', '\x1b[34m', '\x1b[35m'];
+    return msg.split('').map((c, i) => colors[i % colors.length] + c).join('') + '\x1b[0m';
+  },
+
+  alias: () => [
+    '\x1b[36mAliases:\x1b[0m',
+    '  ll=\x1b[33mls -la\x1b[0m',
+    '  la=\x1b[33mls -A\x1b[0m',
+    '  gs=\x1b[33mgit status\x1b[0m',
+    '  gp=\x1b[33mgit push\x1b[0m',
+    '  ..=\x1b[33mcd ..\x1b[0m',
+  ],
+};
+
+interface TerminalContext {
+  currentPath: string;
+  setCurrentPath: (path: string) => void;
+  findNodeByPath: ReturnType<typeof useFileSystem>['findNodeByPath'];
+  getChildren: ReturnType<typeof useFileSystem>['getChildren'];
+  createFolder: ReturnType<typeof useFileSystem>['createFolder'];
+  createFile: ReturnType<typeof useFileSystem>['createFile'];
+  deleteNode: ReturnType<typeof useFileSystem>['deleteNode'];
+  readFile: ReturnType<typeof useFileSystem>['readFile'];
+  clear: () => void;
+  history: string[];
 }
 
 export default function Terminal() {

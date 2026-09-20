@@ -114,22 +114,30 @@ const Calculator: React.FC = () => {
       setWaitingForOperand(false);
       return;
     }
-    setDisplay(prev => prev.includes('.') ? prev : prev + '.');
+    setDisplay(prev => {
+      if (!prev.includes('.')) return prev + '.';
+      return prev;
+    });
   }, [waitingForOperand]);
 
   const performOp = useCallback((op: string) => {
-    const current = parseFloat(display);
-    if (operator && !waitingForOperand) {
-      const result = evaluate(operand || 0, operator, current);
-      setDisplay(formatNumber(result));
-      setOperand(result);
-    } else {
-      setOperand(current);
-    }
-    setOperator(op);
-    setWaitingForOperand(true);
-    setPrevExpr(`${current} ${op}`);
-  }, [display, operator, waitingForOperand, operand]);
+    setDisplay(prevDisplay => {
+      const current = parseFloat(prevDisplay);
+      setPrevExpr(`${current} ${op}`);
+      setWaitingForOperand(true);
+      
+      setOperand(prevOperand => {
+        if (operator && !waitingForOperand) {
+          const result = evaluate(prevOperand || 0, operator, current);
+          setDisplay(formatNumber(result));
+          return result;
+        }
+        return current;
+      });
+      setOperator(op);
+      return prevDisplay;
+    });
+  }, [operator, waitingForOperand]);
 
   const clear = useCallback(() => {
     setDisplay('0');
@@ -214,6 +222,30 @@ const Calculator: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [inputDigit, inputDecimal, performOp, calculate, clear, backspace, percentage]);
+
+  const Btn: React.FC<{
+    label: React.ReactNode;
+    onClick?: () => void;
+    variant?: 'num' | 'op' | 'action' | 'eq' | 'sci';
+    className?: string;
+    colSpan?: number;
+  }> = ({ label, onClick, variant = 'num', className = '', colSpan }) => (
+    <button
+      onClick={onClick}
+      className={
+        `h-12 rounded-md text-sm font-medium transition-all duration-75 active:scale-95 flex items-center justify-center ` +
+        (variant === 'num' ? 'bg-[var(--bg-window)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] ' :
+         variant === 'op' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--accent-primary)] ' :
+         variant === 'action' ? 'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] ' :
+         variant === 'eq' ? 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white ' :
+         'bg-[var(--bg-titlebar)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)] text-xs ') +
+        className
+      }
+      style={colSpan ? { gridColumn: `span ${colSpan}` } : undefined}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div className="flex flex-col h-full select-none" style={{ background: 'var(--bg-window)' }}>

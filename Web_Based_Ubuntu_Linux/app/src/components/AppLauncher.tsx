@@ -151,6 +151,7 @@ const AppLauncher = memo(function AppLauncher() {
       {/* Category tabs */}
       {!searchQuery && (
         <div
+          className="flex items-center gap-0 mt-6 overflow-x-auto max-w-[90vw] custom-scrollbar"
           className="flex items-center gap-0 mt-6 overflow-x-auto custom-scrollbar pb-2 max-w-[90vw]"  // ← CHANGED: added custom-scrollbar pb-2
           style={{ animation: 'searchSlideDown 300ms ease 250ms both' }}
         >
